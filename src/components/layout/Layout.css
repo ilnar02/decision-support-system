@@ -1,0 +1,240 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background-color: var(--primary-800);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  width: 250px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 10;
+}
+
+.sidebar.closed {
+  width: 70px;
+}
+
+.sidebar-header {
+  padding: var(--spacing-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-toggle {
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: var(--spacing-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: var(--spacing-4) 0;
+  overflow-y: auto;
+}
+
+.nav-item {
+  list-style: none;
+  margin-bottom: var(--spacing-1);
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: white;
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--border-radius);
+  transition: background-color 0.2s;
+}
+
+.nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-icon {
+  display: flex;
+  align-items: center;
+  margin-right: var(--spacing-3);
+}
+
+.sidebar.closed .nav-text {
+  display: none;
+}
+
+.sidebar-footer {
+  padding: var(--spacing-4);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-info {
+  margin-bottom: var(--spacing-4);
+}
+
+.user-name {
+  font-weight: 600;
+  margin-bottom: var(--spacing-1);
+}
+
+.user-role {
+  font-size: 0.875rem;
+  opacity: 0.7;
+}
+
+.logout-button {
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  padding: var(--spacing-2) var(--spacing-4);
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.2s;
+}
+
+.logout-button span {
+  margin-left: var(--spacing-2);
+}
+
+.logout-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.sidebar.closed .logout-button span {
+  display: none;
+}
+
+.content {
+  flex: 1;
+  transition: all 0.3s ease;
+  margin-left: 250px;
+  width: calc(100% - 250px);
+}
+
+.content.with-sidebar {
+  margin-left: 250px;
+  width: calc(100% - 250px);
+}
+
+.content.full-width {
+  margin-left: 70px;
+  width: calc(100% - 70px);
+}
+
+.topbar {
+  background-color: white;
+  height: 60px;
+  padding: 0 var(--spacing-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+}
+
+.icon-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2);
+  border-radius: var(--border-radius-full);
+  color: var(--neutral-600);
+  transition: background-color 0.2s;
+}
+
+.icon-button:hover {
+  background-color: var(--neutral-100);
+  color: var(--primary-600);
+}
+
+.page-content {
+  padding: var(--spacing-6);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 250px;
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .sidebar.closed {
+    transform: translateX(-100%);
+  }
+  
+  .content.with-sidebar,
+  .content.full-width {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .topbar {
+    padding: 0 var(--spacing-4);
+  }
+  
+  .page-content {
+    padding: var(--spacing-4);
+  }
+}
+
+/* Add mobile menu button for small screens */
+.mobile-menu-button {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--neutral-600);
+    padding: var(--spacing-2);
+    margin-right: var(--spacing-2);
+  }
+}
