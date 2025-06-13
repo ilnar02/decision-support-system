@@ -28,7 +28,7 @@ export const Layout = ({ children }: { children?: React.ReactNode }) => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    setLocation('/login');
   };
 
   const menuItems = [
@@ -101,7 +101,7 @@ export const Layout = ({ children }: { children?: React.ReactNode }) => {
                   href={item.path} 
                   onClick={(e) => {
                     e.preventDefault();
-                    navigate(item.path);
+                    setLocation(item.path);
                   }}
                   className="nav-link"
                 >
@@ -141,7 +141,7 @@ export const Layout = ({ children }: { children?: React.ReactNode }) => {
         </header>
         
         <div className="page-content">
-          <Outlet />
+          {children}
         </div>
       </main>
     </div>
