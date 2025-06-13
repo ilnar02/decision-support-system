@@ -56,46 +56,22 @@ const rolePermissions: Record<UserRole, string[]> = {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
-  // Mock login function - in a real app, this would make an API call
   const login = async (email: string, password: string) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    if (email === 'admin@example.com' && password === 'password') {
-      setUser({
-        id: '1',
-        name: 'Администратор',
-        email: 'admin@example.com',
-        role: 'admin',
-        location: null,
-      });
-    } else if (email === 'manager@example.com' && password === 'password') {
-      setUser({
-        id: '2',
-        name: 'Менеджер магазина',
-        email: 'manager@example.com',
-        role: 'manager',
-        location: { type: 'store', id: '1' },
-      });
-    } else if (email === 'storekeeper@example.com' && password === 'password') {
-      setUser({
-        id: '3',
-        name: 'Заведующий складом',
-        email: 'storekeeper@example.com',
-        role: 'storekeeper',
-        location: { type: 'warehouse', id: '1' },
-      });
-    } else if (email === 'cashier@example.com' && password === 'password') {
-      setUser({
-        id: '4',
-        name: 'Кассир',
-        email: 'cashier@example.com',
-        role: 'cashier',
-        location: { type: 'store', id: '1' },
-      });
-    } else {
-      throw new Error('Неверные учетные данные');
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Login failed');
     }
+
+    const data = await response.json();
+    setUser(data.user);
   };
 
   const logout = () => {
