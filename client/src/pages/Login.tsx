@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import { AlertCircle, Warehouse } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './Login.css';
@@ -10,7 +10,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,7 +19,7 @@ const Login = () => {
 
     try {
       await login(email, password);
-      navigate('/');
+      setLocation('/');
     } catch (err) {
       setError('Неверный email или пароль');
     } finally {

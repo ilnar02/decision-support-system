@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Router, Route, Switch, useLocation } from 'wouter';
 import { Layout } from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
@@ -11,42 +11,88 @@ import Reports from './pages/Reports';
 import Employees from './pages/Employees';
 import Login from './pages/Login';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import './App.css';
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  
   if (!user) {
-    return <Navigate to="/login" replace />;
+    setLocation('/login');
+    return null;
   }
   return <>{children}</>;
+};
+
+const AppContent = () => {
+  return (
+    <Switch>
+      <Route path="/login" component={Login} />
+      <Route path="/products">
+        <ProtectedRoute>
+          <Layout>
+            <Products />
+          </Layout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/warehouses">
+        <ProtectedRoute>
+          <Layout>
+            <Warehouses />
+          </Layout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/stores">
+        <ProtectedRoute>
+          <Layout>
+            <Stores />
+          </Layout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/suppliers">
+        <ProtectedRoute>
+          <Layout>
+            <Suppliers />
+          </Layout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/transactions">
+        <ProtectedRoute>
+          <Layout>
+            <Transactions />
+          </Layout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/reports">
+        <ProtectedRoute>
+          <Layout>
+            <Reports />
+          </Layout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/employees">
+        <ProtectedRoute>
+          <Layout>
+            <Employees />
+          </Layout>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/">
+        <ProtectedRoute>
+          <Layout>
+            <Dashboard />
+          </Layout>
+        </ProtectedRoute>
+      </Route>
+    </Switch>
+  );
 };
 
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Dashboard />} />
-            <Route path="products/*" element={<Products />} />
-            <Route path="warehouses/*" element={<Warehouses />} />
-            <Route path="stores/*" element={<Stores />} />
-            <Route path="suppliers/*" element={<Suppliers />} />
-            <Route path="transactions/*" element={<Transactions />} />
-            <Route path="reports/*" element={<Reports />} />
-            <Route path="employees/*" element={<Employees />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <AppContent />
       </Router>
     </AuthProvider>
   );

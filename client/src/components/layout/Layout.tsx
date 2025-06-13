@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import { 
   LayoutDashboard, 
   Package, 
@@ -17,9 +17,9 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import './Layout.css';
 
-export const Layout = () => {
+export const Layout = ({ children }: { children?: React.ReactNode }) => {
   const { user, logout, hasPermission } = useAuth();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const toggleSidebar = () => {
