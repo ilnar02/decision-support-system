@@ -463,7 +463,10 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
         </div>
 
-        <form onSubmit={form.handleSubmit(handleSubmit)}>
+        <form onSubmit={(e) => {
+          console.log('Form submission event triggered');
+          form.handleSubmit(handleSubmit)(e);
+        }}>
           {/* Warehouse Selection */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -587,9 +590,21 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({
               Отмена
             </button>
             <button
-              type="submit"
+              type="button"
               disabled={isLoading || !selectedWarehouse || selectedItems.length === 0}
-              onClick={() => console.log('Delivery submit button clicked', { selectedWarehouse, selectedItems, isLoading })}
+              onClick={() => {
+                console.log('Delivery submit button clicked', { selectedWarehouse, selectedItems, isLoading });
+                if (selectedWarehouse && selectedItems.length > 0) {
+                  const deliveryData = {
+                    fromLocationId: selectedWarehouse.id,
+                    toLocationId: store.id,
+                    notes: form.getValues('notes') || '',
+                    items: selectedItems
+                  };
+                  console.log('Submitting delivery data:', deliveryData);
+                  onSubmit(deliveryData);
+                }
+              }}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
@@ -688,7 +703,10 @@ const SaleModal: React.FC<SaleModalProps> = ({
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
         </div>
 
-        <form onSubmit={form.handleSubmit(handleSubmit)}>
+        <form onSubmit={(e) => {
+          console.log('Sale form submission event triggered');
+          form.handleSubmit(handleSubmit)(e);
+        }}>
           {/* Customer Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
@@ -835,9 +853,35 @@ const SaleModal: React.FC<SaleModalProps> = ({
               Отмена
             </button>
             <button
-              type="submit"
+              type="button"
               disabled={isLoading || selectedItems.length === 0}
-              onClick={() => console.log('Sale submit button clicked', { selectedItems, isLoading, formState: form.formState })}
+              onClick={() => {
+                console.log('Sale submit button clicked', { selectedItems, isLoading, formState: form.formState });
+                const customerName = form.getValues('customerName');
+                const customerPhone = form.getValues('customerPhone');
+                const notes = form.getValues('notes');
+                
+                if (!customerName) {
+                  console.log('Customer name is required');
+                  return;
+                }
+                
+                if (selectedItems.length === 0) {
+                  console.log('No items selected for sale');
+                  return;
+                }
+                
+                const saleData = {
+                  storeId: store.id,
+                  customerName,
+                  customerPhone: customerPhone || '',
+                  notes: notes || '',
+                  items: selectedItems
+                };
+                
+                console.log('Submitting sale data:', saleData);
+                onSubmit(saleData);
+              }}
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
