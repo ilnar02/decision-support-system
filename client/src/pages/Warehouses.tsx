@@ -129,7 +129,8 @@ const Warehouses = () => {
   // Filter warehouses
   const filteredWarehouses = warehouses.filter(warehouse =>
     warehouse.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    warehouse.location.toLowerCase().includes(searchTerm.toLowerCase())
+    warehouse.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    warehouse.address.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const selectedWarehouseData = selectedWarehouse
@@ -154,7 +155,7 @@ const Warehouses = () => {
     return {
       totalProducts,
       usedCapacity,
-      capacityPercentage: warehouse.capacity ? (usedCapacity / warehouse.capacity) * 100 : 0
+      capacityPercentage: warehouse.totalCapacity ? (usedCapacity / warehouse.totalCapacity) * 100 : 0
     };
   };
 
@@ -234,7 +235,7 @@ const Warehouses = () => {
                           <h3 className="font-medium text-gray-900 truncate">{warehouse.name}</h3>
                           <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
                             <MapPin size={14} />
-                            <span className="truncate">{warehouse.location}</span>
+                            <span className="truncate">{warehouse.city}</span>
                           </div>
                           <div className="flex items-center justify-between mt-2">
                             <span className="text-sm text-green-600">
@@ -265,7 +266,7 @@ const Warehouses = () => {
                     <h2 className="text-xl font-bold text-gray-900">{selectedWarehouseData.name}</h2>
                     <div className="flex items-center gap-2 text-gray-600 mt-1">
                       <MapPin size={16} />
-                      <span>{selectedWarehouseData.location}</span>
+                      <span>{selectedWarehouseData.address}, {selectedWarehouseData.city}</span>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -313,7 +314,7 @@ const Warehouses = () => {
                       <div>
                         <p className="text-sm text-gray-600">Вместимость</p>
                         <p className="text-xl font-bold text-gray-900">
-                          {selectedWarehouseData.capacity}
+                          {selectedWarehouseData.totalCapacity}
                         </p>
                       </div>
                     </div>
@@ -471,9 +472,12 @@ const WarehouseModal: React.FC<WarehouseModalProps> = ({
     resolver: zodResolver(warehouseSchema),
     defaultValues: {
       name: initialData?.name || '',
-      location: initialData?.location || '',
-      capacity: initialData?.capacity || 0,
-      managerId: initialData?.managerId || undefined,
+      type: initialData?.type || '',
+      city: initialData?.city || '',
+      address: initialData?.address || '',
+      contact: initialData?.contact || '',
+      phone: initialData?.phone || '',
+      totalCapacity: initialData?.totalCapacity || 0,
     }
   });
 
@@ -505,14 +509,70 @@ const WarehouseModal: React.FC<WarehouseModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Местоположение
+              Тип
+            </label>
+            <select
+              {...form.register('type')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Выберите тип</option>
+              <option value="head">Распределительный центр</option>
+              <option value="local">Локальный склад</option>
+            </select>
+            {form.formState.errors.type && (
+              <p className="text-red-600 text-sm mt-1">{form.formState.errors.type.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Город
             </label>
             <input
-              {...form.register('location')}
+              {...form.register('city')}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-            {form.formState.errors.location && (
-              <p className="text-red-600 text-sm mt-1">{form.formState.errors.location.message}</p>
+            {form.formState.errors.city && (
+              <p className="text-red-600 text-sm mt-1">{form.formState.errors.city.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Адрес
+            </label>
+            <input
+              {...form.register('address')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            {form.formState.errors.address && (
+              <p className="text-red-600 text-sm mt-1">{form.formState.errors.address.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Контактное лицо
+            </label>
+            <input
+              {...form.register('contact')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            {form.formState.errors.contact && (
+              <p className="text-red-600 text-sm mt-1">{form.formState.errors.contact.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Телефон
+            </label>
+            <input
+              {...form.register('phone')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            {form.formState.errors.phone && (
+              <p className="text-red-600 text-sm mt-1">{form.formState.errors.phone.message}</p>
             )}
           </div>
 
@@ -522,11 +582,11 @@ const WarehouseModal: React.FC<WarehouseModalProps> = ({
             </label>
             <input
               type="number"
-              {...form.register('capacity', { valueAsNumber: true })}
+              {...form.register('totalCapacity', { valueAsNumber: true })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-            {form.formState.errors.capacity && (
-              <p className="text-red-600 text-sm mt-1">{form.formState.errors.capacity.message}</p>
+            {form.formState.errors.totalCapacity && (
+              <p className="text-red-600 text-sm mt-1">{form.formState.errors.totalCapacity.message}</p>
             )}
           </div>
 
