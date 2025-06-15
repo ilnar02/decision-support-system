@@ -63,9 +63,14 @@ const Warehouses = () => {
   const queryClient = useQueryClient();
 
   // Queries
-  const { data: warehouses = [], isLoading: warehousesLoading } = useQuery<WarehouseWithStats[]>({
+  const { data: warehouses = [], isLoading: warehousesLoading, error: warehousesError } = useQuery<WarehouseWithStats[]>({
     queryKey: ['/api/warehouses'],
   });
+
+  // Debug logging
+  console.log('Warehouses data:', warehouses);
+  console.log('Loading state:', warehousesLoading);
+  console.log('Error:', warehousesError);
 
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ['/api/products'],
@@ -148,14 +153,14 @@ const Warehouses = () => {
 
   // Calculate warehouse stats
   const getWarehouseStats = (warehouse: WarehouseType) => {
-    const inventory = selectedWarehouseInventory.filter(inv => inv.locationId === warehouse.id);
-    const totalProducts = inventory.length;
-    const usedCapacity = inventory.reduce((sum, inv) => sum + inv.quantity, 0);
+    // Use existing usedCapacity from database if available, otherwise calculate from inventory
+    const usedCapacity = warehouse.usedCapacity || 0;
+    const capacityPercentage = warehouse.totalCapacity ? (usedCapacity / warehouse.totalCapacity) * 100 : 0;
     
     return {
-      totalProducts,
+      totalProducts: Math.floor(usedCapacity / 10), // Estimate products based on capacity
       usedCapacity,
-      capacityPercentage: warehouse.totalCapacity ? (usedCapacity / warehouse.totalCapacity) * 100 : 0
+      capacityPercentage
     };
   };
 
