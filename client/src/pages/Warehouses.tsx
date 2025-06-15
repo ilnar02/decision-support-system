@@ -34,11 +34,13 @@ const warehouseSchema = z.object({
 });
 
 const transferSchema = z.object({
-  productId: z.number().min(1, 'Выберите товар'),
-  quantity: z.number().min(1, 'Количество должно быть больше 0'),
   fromLocationId: z.number().min(1, 'Выберите склад отправитель'),
   toLocationId: z.number().min(1, 'Выберите склад получатель'),
   notes: z.string().optional(),
+  items: z.array(z.object({
+    productId: z.number(),
+    quantity: z.number().min(1, 'Количество должно быть больше 0'),
+  })).min(1, 'Выберите хотя бы один товар'),
 });
 
 type WarehouseFormData = z.infer<typeof warehouseSchema>;
@@ -111,12 +113,8 @@ const Warehouses = () => {
           fromLocationType: 'warehouse',
           toLocationId: data.toLocationId,
           toLocationType: 'warehouse',
-          items: [{
-            productId: data.productId,
-            quantity: data.quantity,
-            unitPrice: '0.00',
-            totalPrice: '0.00'
-          }]
+          notes: data.notes,
+          items: data.items
         })
       }),
     onSuccess: () => {
@@ -412,7 +410,7 @@ const Warehouses = () => {
                               </span>
                             </div>
                             <p className="text-sm text-gray-600">
-                              Сумма: {transaction.totalAmount || '0.00'} ₽
+                              {transaction.notes || 'Перемещение товаров между складами'}
                             </p>
                           </div>
                         </div>
@@ -634,104 +632,232 @@ const TransferModal: React.FC<TransferModalProps> = ({
   products,
   isLoading = false
 }) => {
+  const [fromWarehouseId, setFromWarehouseId] = useState<number | null>(null);
+  const [toWarehouseId, setToWarehouseId] = useState<number | null>(null);
+  const [selectedItems, setSelectedItems] = useState<Array<{productId: number, quantity: number}>>([]);
+
+  const { data: fromInventory = [] } = useQuery<Inventory[]>({
+    queryKey: ['/api/inventory', fromWarehouseId, 'warehouse'],
+    queryFn: () => apiRequest(`/api/inventory/${fromWarehouseId}/warehouse`),
+    enabled: !!fromWarehouseId,
+  });
+
+  const { data: toInventory = [] } = useQuery<Inventory[]>({
+    queryKey: ['/api/inventory', toWarehouseId, 'warehouse'],
+    queryFn: () => apiRequest(`/api/inventory/${toWarehouseId}/warehouse`),
+    enabled: !!toWarehouseId,
+  });
+
   const form = useForm<TransferFormData>({
     resolver: zodResolver(transferSchema),
+    defaultValues: {
+      items: [],
+      notes: '',
+    }
   });
+
+  const handleSubmit = (data: TransferFormData) => {
+    const submitData = {
+      ...data,
+      fromLocationId: fromWarehouseId!,
+      toLocationId: toWarehouseId!,
+      items: selectedItems
+    };
+    onSubmit(submitData);
+  };
+
+  const addItem = (productId: number, quantity: number) => {
+    const existingIndex = selectedItems.findIndex(item => item.productId === productId);
+    if (existingIndex >= 0) {
+      const updated = [...selectedItems];
+      updated[existingIndex].quantity = quantity;
+      setSelectedItems(updated);
+    } else {
+      setSelectedItems([...selectedItems, { productId, quantity }]);
+    }
+  };
+
+  const removeItem = (productId: number) => {
+    setSelectedItems(selectedItems.filter(item => item.productId !== productId));
+  };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold">Перемещение товара</h2>
+          <h2 className="text-lg font-bold">Пакетное перемещение товаров</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             ×
           </button>
         </div>
         
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Товар
-            </label>
-            <select
-              {...form.register('productId', { valueAsNumber: true })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Выберите товар</option>
-              {products.map(product => (
-                <option key={product.id} value={product.id}>
-                  {product.name} ({product.sku})
-                </option>
-              ))}
-            </select>
-            {form.formState.errors.productId && (
-              <p className="text-red-600 text-sm mt-1">{form.formState.errors.productId.message}</p>
-            )}
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          {/* Warehouse Selection */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Со склада
+              </label>
+              <select
+                value={fromWarehouseId || ''}
+                onChange={(e) => setFromWarehouseId(e.target.value ? parseInt(e.target.value) : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Выберите склад</option>
+                {warehouses.map(warehouse => (
+                  <option key={warehouse.id} value={warehouse.id}>
+                    {warehouse.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                На склад
+              </label>
+              <select
+                value={toWarehouseId || ''}
+                onChange={(e) => setToWarehouseId(e.target.value ? parseInt(e.target.value) : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Выберите склад</option>
+                {warehouses.filter(w => w.id !== fromWarehouseId).map(warehouse => (
+                  <option key={warehouse.id} value={warehouse.id}>
+                    {warehouse.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
+          {/* Inventory Display */}
+          {fromWarehouseId && toWarehouseId && (
+            <div className="grid grid-cols-2 gap-6">
+              {/* Source Warehouse Inventory */}
+              <div>
+                <h3 className="font-medium text-gray-900 mb-3">
+                  Товары на складе-отправителе
+                </h3>
+                <div className="border rounded-lg">
+                  <div className="max-h-60 overflow-y-auto">
+                    {fromInventory.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500">Товары не найдены</div>
+                    ) : (
+                      fromInventory.map((item) => {
+                        const product = products.find(p => p.id === item.productId);
+                        const selectedItem = selectedItems.find(si => si.productId === item.productId);
+                        return (
+                          <div key={item.id} className="p-3 border-b flex justify-between items-center">
+                            <div className="flex-1">
+                              <div className="font-medium">{product?.name}</div>
+                              <div className="text-sm text-gray-500">
+                                Доступно: {item.quantity} {product?.unit}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                min="1"
+                                max={item.quantity}
+                                placeholder="Кол-во"
+                                value={selectedItem?.quantity || ''}
+                                onChange={(e) => {
+                                  const qty = parseInt(e.target.value);
+                                  if (qty > 0 && qty <= item.quantity) {
+                                    addItem(item.productId, qty);
+                                  }
+                                }}
+                                className="w-20 px-2 py-1 border rounded text-sm"
+                              />
+                              {selectedItem && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeItem(item.productId)}
+                                  className="text-red-600 hover:text-red-800"
+                                >
+                                  ×
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Destination Warehouse Inventory */}
+              <div>
+                <h3 className="font-medium text-gray-900 mb-3">
+                  Товары на складе-получателе
+                </h3>
+                <div className="border rounded-lg">
+                  <div className="max-h-60 overflow-y-auto">
+                    {toInventory.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500">Товары не найдены</div>
+                    ) : (
+                      toInventory.map((item) => {
+                        const product = products.find(p => p.id === item.productId);
+                        return (
+                          <div key={item.id} className="p-3 border-b">
+                            <div className="font-medium">{product?.name}</div>
+                            <div className="text-sm text-gray-500">
+                              Текущий остаток: {item.quantity} {product?.unit}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Selected Items Summary */}
+          {selectedItems.length > 0 && (
+            <div>
+              <h3 className="font-medium text-gray-900 mb-3">
+                Выбранные товары для перемещения ({selectedItems.length})
+              </h3>
+              <div className="bg-gray-50 rounded-lg p-3">
+                {selectedItems.map((item) => {
+                  const product = products.find(p => p.id === item.productId);
+                  return (
+                    <div key={item.productId} className="flex justify-between items-center py-1">
+                      <span>{product?.name}</span>
+                      <span className="font-medium">{item.quantity} {product?.unit}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Notes */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Количество
+              Примечания (необязательно)
             </label>
-            <input
-              type="number"
-              {...form.register('quantity', { valueAsNumber: true })}
+            <textarea
+              {...form.register('notes')}
+              rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Добавьте примечания к перемещению..."
             />
-            {form.formState.errors.quantity && (
-              <p className="text-red-600 text-sm mt-1">{form.formState.errors.quantity.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Со склада
-            </label>
-            <select
-              {...form.register('fromLocationId', { valueAsNumber: true })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Выберите склад</option>
-              {warehouses.map(warehouse => (
-                <option key={warehouse.id} value={warehouse.id}>
-                  {warehouse.name}
-                </option>
-              ))}
-            </select>
-            {form.formState.errors.fromLocationId && (
-              <p className="text-red-600 text-sm mt-1">{form.formState.errors.fromLocationId.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              На склад
-            </label>
-            <select
-              {...form.register('toLocationId', { valueAsNumber: true })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Выберите склад</option>
-              {warehouses.map(warehouse => (
-                <option key={warehouse.id} value={warehouse.id}>
-                  {warehouse.name}
-                </option>
-              ))}
-            </select>
-            {form.formState.errors.toLocationId && (
-              <p className="text-red-600 text-sm mt-1">{form.formState.errors.toLocationId.message}</p>
-            )}
           </div>
 
           <div className="flex gap-2 pt-4">
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !fromWarehouseId || !toWarehouseId || selectedItems.length === 0}
               className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              {isLoading ? 'Перемещение...' : 'Переместить'}
+              {isLoading ? 'Перемещение...' : `Переместить ${selectedItems.length} товаров`}
             </button>
             <button
               type="button"

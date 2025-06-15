@@ -81,12 +81,12 @@ export const inventory = pgTable("inventory", {
 
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
-  type: text("type").notNull(), // incoming, outgoing, transfer, sale
+  type: text("type").notNull(), // incoming, outgoing, transfer
   fromLocationId: integer("from_location_id"),
   fromLocationType: text("from_location_type"),
   toLocationId: integer("to_location_id"),
   toLocationType: text("to_location_type"),
-  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).default("0.00"),
+  notes: text("notes"),
   userId: integer("user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -96,8 +96,6 @@ export const transactionItems = pgTable("transaction_items", {
   transactionId: integer("transaction_id").references(() => transactions.id).notNull(),
   productId: integer("product_id").references(() => products.id).notNull(),
   quantity: integer("quantity").notNull(),
-  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
-  totalPrice: decimal("total_price", { precision: 10, scale: 2 }).notNull(),
 });
 
 // Relations
