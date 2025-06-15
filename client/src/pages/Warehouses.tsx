@@ -657,12 +657,29 @@ const TransferModal: React.FC<TransferModalProps> = ({
   });
 
   const handleSubmit = (data: TransferFormData) => {
+    console.log("Form data received:", data);
+    console.log("Selected items:", selectedItems);
+    console.log("From warehouse:", fromWarehouseId);
+    console.log("To warehouse:", toWarehouseId);
+    
+    if (!fromWarehouseId || !toWarehouseId) {
+      console.error("Missing warehouse IDs");
+      return;
+    }
+    
+    if (selectedItems.length === 0) {
+      console.error("No items selected");
+      return;
+    }
+    
     const submitData = {
       ...data,
       fromLocationId: fromWarehouseId!,
       toLocationId: toWarehouseId!,
       items: selectedItems
     };
+    
+    console.log("Submitting transfer data:", submitData);
     onSubmit(submitData);
   };
 
