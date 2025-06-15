@@ -4,8 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { insertProductSchema, type Product, type Category, type Supplier } from '@shared/schema';
-import { apiRequest } from '@/lib/queryClient';
-import { toast } from '@/hooks/use-toast';
+import { apiRequest } from '../lib/queryClient';
+import { useToast } from '../hooks/use-toast';
 import './Products.css';
 
 type ProductWithRelations = Product & {
@@ -24,6 +24,7 @@ const Products = () => {
   const [editingProduct, setEditingProduct] = useState<ProductWithRelations | null>(null);
   
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const itemsPerPage = 10;
 
   // Fetch products
@@ -139,7 +140,7 @@ const Products = () => {
           <h1>Товары</h1>
           <p>Управление товарными запасами во всех локациях</p>
         </div>
-        <button className="btn btn-primary">
+        <button className="btn btn-primary" onClick={() => setIsAddModalOpen(true)}>
           <Plus size={16} />
           <span>Добавить товар</span>
         </button>
@@ -164,8 +165,11 @@ const Products = () => {
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
           >
-            {categories.map((category, index) => (
-              <option key={index} value={category}>{category}</option>
+            <option value="">Все категории</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id.toString()}>
+                {category.name}
+              </option>
             ))}
           </select>
         </div>
@@ -206,30 +210,32 @@ const Products = () => {
                     </td>
                     <td>{product.sku}</td>
                     <td>
-                      <span className="badge badge-primary">{product.category}</span>
+                      <span className="badge badge-primary">
+                        {categories.find(c => c.id === product.categoryId)?.name || 'Без категории'}
+                      </span>
                     </td>
-                    <td>₽{product.price.toFixed(2)}</td>
+                    <td>₽{parseFloat(product.price.toString()).toFixed(2)}</td>
                     <td>
                       <div className="stock-indicator">
                         <div 
                           className={`stock-bar ${
-                            product.stock.total <= product.minStock 
+                            (product.totalStock || 0) <= (product.minStock || 0)
                               ? 'low' 
-                              : product.stock.total <= product.minStock * 2 
+                              : (product.totalStock || 0) <= ((product.minStock || 0) * 2)
                                 ? 'medium' 
                                 : 'good'
                           }`}
-                          style={{ width: `${Math.min(100, (product.stock.total / (product.minStock * 3)) * 100)}%` }}
+                          style={{ width: `${Math.min(100, ((product.totalStock || 0) / ((product.minStock || 1) * 3)) * 100)}%` }}
                         ></div>
-                        <span className="stock-text">{product.stock.total} {product.unit}s</span>
+                        <span className="stock-text">{product.totalStock || 0} {product.unit}</span>
                       </div>
                     </td>
                     <td>
                       <div className="actions">
-                        <button className="icon-button" onClick={(e) => e.stopPropagation()}>
+                        <button className="icon-button" onClick={(e) => handleEditProduct(product, e)}>
                           <Edit size={16} />
                         </button>
-                        <button className="icon-button danger" onClick={(e) => e.stopPropagation()}>
+                        <button className="icon-button danger" onClick={(e) => handleDeleteProduct(product.id, e)}>
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -285,7 +291,9 @@ const Products = () => {
             <div className="product-attributes">
               <div className="attribute">
                 <span className="attribute-label">Категория</span>
-                <span className="attribute-value">{selectedProductData.category}</span>
+                <span className="attribute-value">
+                  {categories.find(c => c.id === selectedProductData.categoryId)?.name || 'Без категории'}
+                </span>
               </div>
               
               <div className="attribute">
@@ -295,49 +303,50 @@ const Products = () => {
               
               <div className="attribute">
                 <span className="attribute-label">Вес/Размер</span>
-                <span className="attribute-value">{selectedProductData.weight}</span>
+                <span className="attribute-value">{selectedProductData.weight || 'Не указано'}</span>
               </div>
               
               <div className="attribute">
                 <span className="attribute-label">Цена</span>
-                <span className="attribute-value">₽{selectedProductData.price.toFixed(2)}</span>
+                <span className="attribute-value">₽{parseFloat(selectedProductData.price.toString()).toFixed(2)}</span>
               </div>
               
               <div className="attribute">
                 <span className="attribute-label">Поставщик</span>
-                <span className="attribute-value">{selectedProductData.supplier}</span>
+                <span className="attribute-value">
+                  {suppliers.find(s => s.id === selectedProductData.supplierId)?.name || 'Не указан'}
+                </span>
               </div>
               
               <div className="attribute">
                 <span className="attribute-label">Минимальный запас</span>
-                <span className="attribute-value">{selectedProductData.minStock} {selectedProductData.unit}</span>
+                <span className="attribute-value">{selectedProductData.minStock || 0} {selectedProductData.unit}</span>
               </div>
-              
-              {selectedProductData.expiryDate && (
-                <div className="attribute">
-                  <span className="attribute-label">Срок годности</span>
-                  <span className="attribute-value">{selectedProductData.expiryDate}</span>
-                </div>
-              )}
             </div>
             
             <div className="stock-distribution">
               <h3>Распределение по складам</h3>
               <div className="location-stocks">
-                {selectedProductData.stock.locations.map((location, index) => (
-                  <div className="location-stock" key={index}>
-                    <div className="location-info">
-                      <span className="location-name">{location.name}</span>
-                      <span className="location-quantity">{location.quantity} {selectedProductData.unit}</span>
+                {inventory.length > 0 ? (
+                  inventory.map((item: any, index: number) => (
+                    <div className="location-stock" key={index}>
+                      <div className="location-info">
+                        <span className="location-name">
+                          {item.locationType === 'warehouse' ? 'Склад' : 'Магазин'} №{item.locationId}
+                        </span>
+                        <span className="location-quantity">{item.quantity} {selectedProductData.unit}</span>
+                      </div>
+                      <div className="location-stock-bar-container">
+                        <div 
+                          className="location-stock-bar"
+                          style={{ width: `${(item.quantity / (selectedProductData.totalStock || 1)) * 100}%` }}
+                        ></div>
+                      </div>
                     </div>
-                    <div className="location-stock-bar-container">
-                      <div 
-                        className="location-stock-bar"
-                        style={{ width: `${(location.quantity / selectedProductData.stock.total) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p>Нет данных о распределении товара</p>
+                )}
               </div>
             </div>
             
@@ -352,6 +361,248 @@ const Products = () => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Add Product Modal */}
+      {isAddModalOpen && (
+        <ProductModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onSubmit={(data) => addProductMutation.mutate(data)}
+          categories={categories}
+          suppliers={suppliers}
+          title="Добавить товар"
+          isLoading={addProductMutation.isPending}
+        />
+      )}
+
+      {/* Edit Product Modal */}
+      {isEditModalOpen && editingProduct && (
+        <ProductModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setEditingProduct(null);
+          }}
+          onSubmit={(data) => 
+            updateProductMutation.mutate({ 
+              id: editingProduct.id, 
+              data 
+            })
+          }
+          categories={categories}
+          suppliers={suppliers}
+          title="Редактировать товар"
+          initialData={editingProduct}
+          isLoading={updateProductMutation.isPending}
+        />
+      )}
+    </div>
+  );
+};
+
+// Product Modal Component
+interface ProductModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: any) => void;
+  categories: Category[];
+  suppliers: Supplier[];
+  title: string;
+  initialData?: ProductWithRelations;
+  isLoading?: boolean;
+}
+
+const ProductModal: React.FC<ProductModalProps> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  categories,
+  suppliers,
+  title,
+  initialData,
+  isLoading = false
+}) => {
+  const form = useForm({
+    resolver: zodResolver(insertProductSchema.extend({
+      categoryId: insertProductSchema.shape.categoryId.optional(),
+      supplierId: insertProductSchema.shape.supplierId.optional(),
+    })),
+    defaultValues: {
+      name: initialData?.name || '',
+      sku: initialData?.sku || '',
+      categoryId: initialData?.categoryId || undefined,
+      supplierId: initialData?.supplierId || undefined,
+      unit: initialData?.unit || '',
+      weight: initialData?.weight || '',
+      price: initialData?.price ? parseFloat(initialData.price.toString()) : 0,
+      minStock: initialData?.minStock || 0,
+      image: initialData?.image || '',
+    }
+  });
+
+  const handleSubmit = (data: any) => {
+    const submitData = {
+      ...data,
+      categoryId: data.categoryId || null,
+      supplierId: data.supplierId || null,
+      price: data.price.toString(),
+    };
+    onSubmit(submitData);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{title}</h2>
+          <button className="icon-button" onClick={onClose}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="product-form">
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="name">Название товара *</label>
+              <input
+                id="name"
+                type="text"
+                {...form.register('name')}
+                className="form-input"
+                placeholder="Введите название товара"
+              />
+              {form.formState.errors.name && (
+                <span className="error-text">{form.formState.errors.name.message}</span>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="sku">Артикул *</label>
+              <input
+                id="sku"
+                type="text"
+                {...form.register('sku')}
+                className="form-input"
+                placeholder="Введите артикул"
+              />
+              {form.formState.errors.sku && (
+                <span className="error-text">{form.formState.errors.sku.message}</span>
+              )}
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="categoryId">Категория</label>
+              <select
+                id="categoryId"
+                {...form.register('categoryId')}
+                className="form-select"
+              >
+                <option value="">Выберите категорию</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="supplierId">Поставщик</label>
+              <select
+                id="supplierId"
+                {...form.register('supplierId')}
+                className="form-select"
+              >
+                <option value="">Выберите поставщика</option>
+                {suppliers.map((supplier) => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="unit">Единица измерения *</label>
+              <input
+                id="unit"
+                type="text"
+                {...form.register('unit')}
+                className="form-input"
+                placeholder="мешок, метр, упаковка, лист"
+              />
+              {form.formState.errors.unit && (
+                <span className="error-text">{form.formState.errors.unit.message}</span>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="weight">Вес/Размер</label>
+              <input
+                id="weight"
+                type="text"
+                {...form.register('weight')}
+                className="form-input"
+                placeholder="50кг, 12мм x 12м"
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="price">Цена *</label>
+              <input
+                id="price"
+                type="number"
+                step="0.01"
+                {...form.register('price', { valueAsNumber: true })}
+                className="form-input"
+                placeholder="0.00"
+              />
+              {form.formState.errors.price && (
+                <span className="error-text">{form.formState.errors.price.message}</span>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="minStock">Минимальный запас</label>
+              <input
+                id="minStock"
+                type="number"
+                {...form.register('minStock', { valueAsNumber: true })}
+                className="form-input"
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="image">URL изображения</label>
+            <input
+              id="image"
+              type="url"
+              {...form.register('image')}
+              className="form-input"
+              placeholder="https://example.com/image.jpg"
+            />
+          </div>
+
+          <div className="modal-actions">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
+              Отмена
+            </button>
+            <button type="submit" className="btn btn-primary" disabled={isLoading}>
+              {isLoading ? 'Сохранение...' : 'Сохранить'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
