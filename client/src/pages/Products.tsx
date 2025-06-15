@@ -442,10 +442,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
   isLoading = false
 }) => {
   const form = useForm({
-    resolver: zodResolver(insertProductSchema.extend({
-      categoryId: insertProductSchema.shape.categoryId.nullable().optional(),
-      supplierId: insertProductSchema.shape.supplierId.nullable().optional(),
-    })),
     defaultValues: {
       name: initialData?.name || '',
       sku: initialData?.sku || '',
@@ -488,7 +484,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <input
                 id="name"
                 type="text"
-                {...form.register('name')}
+                {...form.register('name', { required: 'Название товара обязательно' })}
                 className="form-input"
                 placeholder="Введите название товара"
               />
@@ -502,7 +498,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <input
                 id="sku"
                 type="text"
-                {...form.register('sku')}
+                {...form.register('sku', { required: 'Артикул обязателен' })}
                 className="form-input"
                 placeholder="Введите артикул"
               />
@@ -562,7 +558,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <input
                 id="unit"
                 type="text"
-                {...form.register('unit')}
+                {...form.register('unit', { required: 'Единица измерения обязательна' })}
                 className="form-input"
                 placeholder="мешок, метр, упаковка, лист"
               />
@@ -590,7 +586,12 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 id="price"
                 type="number"
                 step="0.01"
-                {...form.register('price', { valueAsNumber: true })}
+                min="0"
+                {...form.register('price', { 
+                  required: 'Цена обязательна',
+                  valueAsNumber: true,
+                  min: { value: 0.01, message: 'Цена должна быть больше 0' }
+                })}
                 className="form-input"
                 placeholder="0.00"
               />
