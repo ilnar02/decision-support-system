@@ -1,0 +1,106 @@
+# СтройМастер - Inventory Management System
+
+## Overview
+
+This is a full-stack inventory management system built for construction material retail businesses. The application provides comprehensive inventory tracking, user management, and business analytics with role-based access control.
+
+## System Architecture
+
+### Frontend
+- **Framework**: React 18 with TypeScript
+- **UI Library**: Shadcn/ui components with Radix UI primitives
+- **Styling**: Tailwind CSS with custom CSS variables
+- **State Management**: React Query (TanStack Query) for server state
+- **Routing**: Wouter for client-side routing
+- **Forms**: React Hook Form with Zod validation
+- **Build Tool**: Vite
+
+### Backend
+- **Runtime**: Node.js with Express.js
+- **Language**: TypeScript with ES modules
+- **Database**: PostgreSQL with Drizzle ORM
+- **Database Provider**: Neon Database (@neondatabase/serverless)
+- **Session Management**: Connect-pg-simple for PostgreSQL sessions
+- **Development**: tsx for TypeScript execution
+
+### Database Architecture
+- **ORM**: Drizzle ORM with PostgreSQL dialect
+- **Schema**: Type-safe database schema with Zod validation
+- **Migrations**: Drizzle Kit for schema migrations
+
+## Key Components
+
+### Database Schema
+- **Users**: Role-based authentication (admin, manager, storekeeper, cashier)
+- **Products**: SKU-based product catalog with categories and suppliers
+- **Inventory**: Location-based stock tracking (warehouses and stores)
+- **Suppliers**: Vendor management with ratings and contact information
+- **Transactions**: Stock movement tracking between locations
+- **Categories**: Product categorization system
+- **Locations**: Warehouses and stores with capacity management
+
+### Authentication & Authorization
+- **Role-based Access Control**: Four user roles with different permissions
+- **Location-based Access**: Users can be assigned to specific warehouses or stores
+- **Protected Routes**: Client-side route protection based on authentication state
+
+### User Interface
+- **Responsive Design**: Mobile-first approach with grid layouts
+- **Component Library**: Comprehensive UI components using Shadcn/ui
+- **Theme System**: CSS custom properties for consistent styling
+- **Interactive Elements**: Modals, forms, and data tables
+
+## Data Flow
+
+1. **Client Requests**: React components make API calls using React Query
+2. **Server Processing**: Express routes handle requests and validate data
+3. **Database Operations**: Drizzle ORM executes type-safe database queries
+4. **Response Handling**: JSON responses with proper error handling
+5. **State Updates**: React Query automatically updates client state
+
+## External Dependencies
+
+### Core Dependencies
+- **@neondatabase/serverless**: PostgreSQL database connection
+- **drizzle-orm**: Type-safe database ORM
+- **@tanstack/react-query**: Server state management
+- **@radix-ui/***: Accessible UI primitives
+- **react-hook-form**: Form handling with validation
+- **zod**: Schema validation
+
+### Development Tools
+- **Vite**: Fast build tool and development server
+- **TypeScript**: Type safety across the stack
+- **Tailwind CSS**: Utility-first styling
+- **ESBuild**: Production bundling
+
+## Deployment Strategy
+
+### Development
+- **Environment**: Replit with Node.js 20 and PostgreSQL 16
+- **Hot Reload**: Vite development server with HMR
+- **Database**: Auto-provisioned PostgreSQL instance
+
+### Production
+- **Build Process**: Vite for client bundle, ESBuild for server bundle
+- **Deployment Target**: Autoscale deployment on Replit
+- **Port Configuration**: Internal port 5000, external port 80
+- **Static Assets**: Served from dist/public directory
+
+### Build Configuration
+- Client bundle output: `dist/public`
+- Server bundle output: `dist/index.js`
+- Static file serving in production mode
+
+## Changelog
+
+```
+Changelog:
+- June 15, 2025. Initial setup
+```
+
+## User Preferences
+
+```
+Preferred communication style: Simple, everyday language.
+```
