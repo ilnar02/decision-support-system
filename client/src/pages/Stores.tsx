@@ -415,9 +415,18 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({
   });
 
   const handleSubmit = (data: DeliveryFormData) => {
+    console.log('Delivery form submitted:', data, 'Selected items:', selectedItems, 'Warehouse:', selectedWarehouse);
+    if (!selectedWarehouse) {
+      console.log('No warehouse selected');
+      return;
+    }
+    if (selectedItems.length === 0) {
+      console.log('No items selected');
+      return;
+    }
     onSubmit({
       ...data,
-      fromLocationId: selectedWarehouse?.id || 0,
+      fromLocationId: selectedWarehouse.id,
       toLocationId: store.id,
       items: selectedItems
     });
@@ -580,6 +589,7 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({
             <button
               type="submit"
               disabled={isLoading || !selectedWarehouse || selectedItems.length === 0}
+              onClick={() => console.log('Delivery submit button clicked', { selectedWarehouse, selectedItems, isLoading })}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
@@ -626,6 +636,16 @@ const SaleModal: React.FC<SaleModalProps> = ({
   });
 
   const handleSubmit = (data: SaleFormData) => {
+    console.log('Sale form submitted:', data, 'Selected items:', selectedItems);
+    console.log('Form errors:', form.formState.errors);
+    if (selectedItems.length === 0) {
+      console.log('No items selected for sale');
+      return;
+    }
+    if (!data.customerName) {
+      console.log('Customer name is required');
+      return;
+    }
     onSubmit({
       ...data,
       storeId: store.id,
@@ -817,6 +837,7 @@ const SaleModal: React.FC<SaleModalProps> = ({
             <button
               type="submit"
               disabled={isLoading || selectedItems.length === 0}
+              onClick={() => console.log('Sale submit button clicked', { selectedItems, isLoading, formState: form.formState })}
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
