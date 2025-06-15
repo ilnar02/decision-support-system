@@ -37,10 +37,6 @@ const transferSchema = z.object({
   fromLocationId: z.number().min(1, 'Выберите склад отправитель'),
   toLocationId: z.number().min(1, 'Выберите склад получатель'),
   notes: z.string().optional(),
-  items: z.array(z.object({
-    productId: z.number(),
-    quantity: z.number().min(1, 'Количество должно быть больше 0'),
-  })).min(1, 'Выберите хотя бы один товар'),
 });
 
 type WarehouseFormData = z.infer<typeof warehouseSchema>;
@@ -104,7 +100,7 @@ const Warehouses = () => {
   });
 
   const createTransferMutation = useMutation({
-    mutationFn: (data: TransferFormData) => 
+    mutationFn: (data: { fromLocationId: number; toLocationId: number; notes?: string; items: Array<{productId: number, quantity: number}> }) => 
       apiRequest('/api/transactions', {
         method: 'POST',
         body: JSON.stringify({
@@ -635,6 +631,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
   const [fromWarehouseId, setFromWarehouseId] = useState<number | null>(null);
   const [toWarehouseId, setToWarehouseId] = useState<number | null>(null);
   const [selectedItems, setSelectedItems] = useState<Array<{productId: number, quantity: number}>>([]);
+  const [notes, setNotes] = useState('');
 
   const { data: fromInventory = [] } = useQuery<Inventory[]>({
     queryKey: ['/api/inventory', fromWarehouseId, 'warehouse'],
@@ -648,16 +645,8 @@ const TransferModal: React.FC<TransferModalProps> = ({
     enabled: !!toWarehouseId,
   });
 
-  const form = useForm<TransferFormData>({
-    resolver: zodResolver(transferSchema),
-    defaultValues: {
-      items: [],
-      notes: '',
-    }
-  });
-
-  const handleSubmit = (data: TransferFormData) => {
-    console.log("Form data received:", data);
+  const handleSubmit = () => {
+    console.log("Handle submit called directly");
     console.log("Selected items:", selectedItems);
     console.log("From warehouse:", fromWarehouseId);
     console.log("To warehouse:", toWarehouseId);
@@ -673,9 +662,9 @@ const TransferModal: React.FC<TransferModalProps> = ({
     }
     
     const submitData = {
-      ...data,
-      fromLocationId: fromWarehouseId!,
-      toLocationId: toWarehouseId!,
+      fromLocationId: fromWarehouseId,
+      toLocationId: toWarehouseId,
+      notes: notes,
       items: selectedItems
     };
     
@@ -710,7 +699,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
           </button>
         </div>
         
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <div className="space-y-6">
           {/* Warehouse Selection */}
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -861,7 +850,8 @@ const TransferModal: React.FC<TransferModalProps> = ({
               Примечания (необязательно)
             </label>
             <textarea
-              {...form.register('notes')}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
               rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Добавьте примечания к перемещению..."
@@ -870,9 +860,10 @@ const TransferModal: React.FC<TransferModalProps> = ({
 
           <div className="flex gap-2 pt-4">
             <button
-              type="submit"
+              type="button"
               disabled={isLoading || !fromWarehouseId || !toWarehouseId || selectedItems.length === 0}
               className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              onClick={handleSubmit}
             >
               {isLoading ? 'Перемещение...' : `Переместить ${selectedItems.length} товаров`}
             </button>
@@ -884,7 +875,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
               Отмена
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
