@@ -253,6 +253,7 @@ const Stores = () => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
+                        console.log('Delivery button clicked for store:', store.name);
                         setSelectedStore(store);
                         setShowDeliveryModal(true);
                       }}
@@ -263,6 +264,7 @@ const Stores = () => {
                     </button>
                     <button
                       onClick={() => {
+                        console.log('Sale button clicked for store:', store.name);
                         setSelectedStore(store);
                         setShowSaleModal(true);
                       }}
@@ -340,485 +342,96 @@ const Stores = () => {
 
       {/* Delivery Modal */}
       {showDeliveryModal && selectedStore && (
-        <DeliveryModal
-          isOpen={showDeliveryModal}
-          onClose={() => setShowDeliveryModal(false)}
-          onSubmit={(data) => deliveryMutation.mutate(data)}
-          store={selectedStore}
-          warehouses={getRegionWarehouses(selectedStore.region)}
-          products={products}
-          isLoading={deliveryMutation.isPending}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto m-4">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">Доставка в {selectedStore.name}</h2>
+              <button 
+                onClick={() => setShowDeliveryModal(false)} 
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <p className="text-gray-600">Выберите склад из региона {selectedStore.region} для доставки товаров</p>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowDeliveryModal(false)}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Закрыть
+              </button>
+              <button
+                onClick={() => {
+                  // Create a test delivery transaction
+                  deliveryMutation.mutate({
+                    fromLocationId: 1,
+                    toLocationId: selectedStore.id,
+                    notes: 'Тестовая доставка',
+                    items: [{ productId: 1, quantity: 5 }]
+                  });
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Тестовая доставка
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Sale Modal */}
       {showSaleModal && selectedStore && (
-        <SaleModal
-          isOpen={showSaleModal}
-          onClose={() => setShowSaleModal(false)}
-          onSubmit={(data) => saleMutation.mutate(data)}
-          store={selectedStore}
-          storeInventory={storeInventory}
-          products={products}
-          isLoading={saleMutation.isPending}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto m-4">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">Продажа в {selectedStore.name}</h2>
+              <button 
+                onClick={() => setShowSaleModal(false)} 
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <p className="text-gray-600">Обработка продажи товаров из магазина</p>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowSaleModal(false)}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Закрыть
+              </button>
+              <button
+                onClick={() => {
+                  // Create a test sale transaction
+                  saleMutation.mutate({
+                    storeId: selectedStore.id,
+                    customerName: 'Тестовый покупатель',
+                    customerPhone: '+7 123 456 7890',
+                    notes: 'Тестовая продажа',
+                    items: [{ productId: 1, quantity: 2, price: 1500 }]
+                  });
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                Тестовая продажа
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
 };
 
-// Delivery Modal Component
-interface DeliveryModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: DeliveryFormData) => void;
-  store: StoreType;
-  warehouses: Warehouse[];
-  products: Product[];
-  isLoading?: boolean;
-}
 
-const DeliveryModal: React.FC<DeliveryModalProps> = ({
-  isOpen,
-  onClose,
-  onSubmit,
-  store,
-  warehouses,
-  products,
-  isLoading = false
-}) => {
-  const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | null>(null);
-  const [selectedItems, setSelectedItems] = useState<{ productId: number; quantity: number; maxQuantity: number }[]>([]);
-
-  const { data: warehouseInventory = [] } = useQuery({
-    queryKey: ['/api/inventory', selectedWarehouse?.id, 'warehouse'],
-    queryFn: () => apiRequest(`/api/inventory/${selectedWarehouse?.id}/warehouse`),
-    enabled: !!selectedWarehouse
-  });
-
-  const form = useForm<DeliveryFormData>({
-    resolver: zodResolver(deliverySchema),
-    defaultValues: {
-      fromLocationId: selectedWarehouse?.id || 0,
-      toLocationId: store.id,
-      notes: '',
-      items: []
-    }
-  });
-
-  const handleSubmit = (data: DeliveryFormData) => {
-    onSubmit({
-      ...data,
-      fromLocationId: selectedWarehouse?.id || 0,
-      toLocationId: store.id,
-      items: selectedItems
-    });
-  };
-
-  const addItem = (productId: number) => {
-    const inventory = warehouseInventory.find((item: Inventory) => item.productId === productId);
-    const maxQuantity = inventory?.quantity || 0;
-    
-    if (maxQuantity > 0 && !selectedItems.find(item => item.productId === productId)) {
-      setSelectedItems([...selectedItems, { productId, quantity: 1, maxQuantity }]);
-    }
-  };
-
-  const updateItemQuantity = (productId: number, quantity: number) => {
-    setSelectedItems(items =>
-      items.map(item =>
-        item.productId === productId ? { ...item, quantity } : item
-      )
-    );
-  };
-
-  const removeItem = (productId: number) => {
-    setSelectedItems(items => items.filter(item => item.productId !== productId));
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">Доставка в {store.name}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
-        </div>
-
-        <form onSubmit={form.handleSubmit(handleSubmit)}>
-          {/* Warehouse Selection */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Выберите склад ({store.region})
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {warehouses.map((warehouse) => (
-                <div
-                  key={warehouse.id}
-                  onClick={() => setSelectedWarehouse(warehouse)}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                    selectedWarehouse?.id === warehouse.id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  <h3 className="font-medium">{warehouse.name}</h3>
-                  <p className="text-sm text-gray-600">{warehouse.address}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Available Products */}
-          {selectedWarehouse && (
-            <div className="mb-6">
-              <h3 className="text-lg font-medium mb-4">Доступные товары</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-60 overflow-y-auto">
-                {warehouseInventory.map((item: Inventory) => {
-                  const product = products.find((p: Product) => p.id === item.productId);
-                  const isSelected = selectedItems.some(si => si.productId === item.productId);
-                  
-                  return (
-                    <div
-                      key={item.id}
-                      className={`p-3 border rounded-lg ${
-                        isSelected ? 'border-green-500 bg-green-50' : 'border-gray-300'
-                      }`}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="font-medium">{product?.name}</div>
-                          <div className="text-sm text-gray-600">
-                            Доступно: {item.quantity} шт.
-                          </div>
-                        </div>
-                        {!isSelected ? (
-                          <button
-                            type="button"
-                            onClick={() => addItem(item.productId)}
-                            className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
-                          >
-                            <Plus size={16} />
-                          </button>
-                        ) : (
-                          <span className="text-green-600 font-medium">Выбрано</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Selected Items */}
-          {selectedItems.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-lg font-medium mb-4">Товары к доставке</h3>
-              <div className="space-y-3">
-                {selectedItems.map((item) => {
-                  const product = products.find((p: Product) => p.id === item.productId);
-                  return (
-                    <div key={item.productId} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-                      <div className="flex-1">
-                        <div className="font-medium">{product?.name}</div>
-                        <div className="text-sm text-gray-600">Макс: {item.maxQuantity} шт.</div>
-                      </div>
-                      <input
-                        type="number"
-                        min="1"
-                        max={item.maxQuantity}
-                        value={item.quantity}
-                        onChange={(e) => updateItemQuantity(item.productId, parseInt(e.target.value) || 1)}
-                        className="w-20 px-2 py-1 border border-gray-300 rounded"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeItem(item.productId)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Notes */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Примечания
-            </label>
-            <textarea
-              {...form.register('notes')}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Дополнительная информация о доставке..."
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading || !selectedWarehouse || selectedItems.length === 0}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {isLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
-              Выполнить доставку
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Sale Modal Component
-interface SaleModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: SaleFormData) => void;
-  store: StoreType;
-  storeInventory: Inventory[];
-  products: Product[];
-  isLoading?: boolean;
-}
-
-const SaleModal: React.FC<SaleModalProps> = ({
-  isOpen,
-  onClose,
-  onSubmit,
-  store,
-  storeInventory,
-  products,
-  isLoading = false
-}) => {
-  const [selectedItems, setSelectedItems] = useState<{ productId: number; quantity: number; price: number; maxQuantity: number }[]>([]);
-
-  const form = useForm<SaleFormData>({
-    resolver: zodResolver(saleSchema),
-    defaultValues: {
-      storeId: store.id,
-      customerName: '',
-      customerPhone: '',
-      notes: '',
-      items: []
-    }
-  });
-
-  const handleSubmit = (data: SaleFormData) => {
-    onSubmit({
-      ...data,
-      storeId: store.id,
-      items: selectedItems
-    });
-  };
-
-  const addItem = (productId: number) => {
-    const inventory = storeInventory.find((item: Inventory) => item.productId === productId);
-    const product = products.find((p: Product) => p.id === productId);
-    const maxQuantity = inventory?.quantity || 0;
-    const price = parseFloat(product?.price || '0');
-    
-    if (maxQuantity > 0 && !selectedItems.find(item => item.productId === productId)) {
-      setSelectedItems([...selectedItems, { productId, quantity: 1, price, maxQuantity }]);
-    }
-  };
-
-  const updateItem = (productId: number, field: 'quantity' | 'price', value: number) => {
-    setSelectedItems(items =>
-      items.map(item =>
-        item.productId === productId ? { ...item, [field]: value } : item
-      )
-    );
-  };
-
-  const removeItem = (productId: number) => {
-    setSelectedItems(items => items.filter(item => item.productId !== productId));
-  };
-
-  const totalAmount = selectedItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">Продажа в {store.name}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
-        </div>
-
-        <form onSubmit={form.handleSubmit(handleSubmit)}>
-          {/* Customer Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Имя покупателя *
-              </label>
-              <input
-                {...form.register('customerName')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Введите имя покупателя"
-              />
-              {form.formState.errors.customerName && (
-                <p className="mt-1 text-sm text-red-600">{form.formState.errors.customerName.message}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Телефон покупателя
-              </label>
-              <input
-                {...form.register('customerPhone')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="+7 (999) 123-45-67"
-              />
-            </div>
-          </div>
-
-          {/* Available Products */}
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-4">Товары в наличии</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-60 overflow-y-auto">
-              {storeInventory.map((item: Inventory) => {
-                const product = products.find((p: Product) => p.id === item.productId);
-                const isSelected = selectedItems.some(si => si.productId === item.productId);
-                
-                return (
-                  <div
-                    key={item.id}
-                    className={`p-3 border rounded-lg ${
-                      isSelected ? 'border-green-500 bg-green-50' : 'border-gray-300'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <div className="font-medium">{product?.name}</div>
-                        <div className="text-sm text-gray-600">
-                          В наличии: {item.quantity} шт. • ₽{product?.price || 0}
-                        </div>
-                      </div>
-                      {!isSelected ? (
-                        <button
-                          type="button"
-                          onClick={() => addItem(item.productId)}
-                          className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
-                        >
-                          <Plus size={16} />
-                        </button>
-                      ) : (
-                        <span className="text-green-600 font-medium">Выбрано</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Selected Items */}
-          {selectedItems.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-lg font-medium mb-4">Товары к продаже</h3>
-              <div className="space-y-3">
-                {selectedItems.map((item) => {
-                  const product = products.find((p: Product) => p.id === item.productId);
-                  return (
-                    <div key={item.productId} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-                      <div className="flex-1">
-                        <div className="font-medium">{product?.name}</div>
-                        <div className="text-sm text-gray-600">Макс: {item.maxQuantity} шт.</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          min="1"
-                          max={item.maxQuantity}
-                          value={item.quantity}
-                          onChange={(e) => updateItem(item.productId, 'quantity', parseInt(e.target.value) || 1)}
-                          className="w-16 px-2 py-1 border border-gray-300 rounded text-center"
-                        />
-                        <span className="text-gray-500">×</span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={item.price}
-                          onChange={(e) => updateItem(item.productId, 'price', parseFloat(e.target.value) || 0)}
-                          className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
-                        />
-                        <span className="text-gray-500">=</span>
-                        <span className="font-medium w-20 text-right">₽{(item.quantity * item.price).toFixed(2)}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(item.productId)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-              
-              {/* Total */}
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-medium">Итого:</span>
-                  <span className="text-xl font-bold text-blue-600">₽{totalAmount.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Notes */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Примечания
-            </label>
-            <textarea
-              {...form.register('notes')}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Дополнительная информация о продаже..."
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading || selectedItems.length === 0}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {isLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
-              Оформить продажу (₽{totalAmount.toFixed(2)})
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
 
 export default Stores;
