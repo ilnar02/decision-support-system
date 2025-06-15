@@ -194,58 +194,72 @@ const Products = () => {
                 </tr>
               </thead>
               <tbody>
-                {paginatedProducts.map((product) => (
-                  <tr 
-                    key={product.id} 
-                    className={`product-row ${selectedProduct === product.id ? 'selected' : ''}`}
-                    onClick={() => handleProductSelect(product.id)}
-                  >
-                    <td className="product-cell">
-                      <div className="product-info">
-                        <div className="product-image">
-                          {product.image ? (
-                            <img src={product.image} alt={product.name} />
-                          ) : (
-                            <Package size={24} />
-                          )}
-                        </div>
-                        <span className="product-name">{product.name}</span>
-                      </div>
-                    </td>
-                    <td>{product.sku}</td>
-                    <td>
-                      <span className="badge badge-primary">
-                        {categories.find(c => c.id === product.categoryId)?.name || 'Без категории'}
-                      </span>
-                    </td>
-                    <td>₽{parseFloat(product.price.toString()).toFixed(2)}</td>
-                    <td>
-                      <div className="stock-indicator">
-                        <div 
-                          className={`stock-bar ${
-                            (product.totalStock || 0) <= (product.minStock || 0)
-                              ? 'low' 
-                              : (product.totalStock || 0) <= ((product.minStock || 0) * 2)
-                                ? 'medium' 
-                                : 'good'
-                          }`}
-                          style={{ width: `${Math.min(100, ((product.totalStock || 0) / ((product.minStock || 1) * 3)) * 100)}%` }}
-                        ></div>
-                        <span className="stock-text">{product.totalStock || 0} {product.unit}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="actions">
-                        <button className="icon-button" onClick={(e) => handleEditProduct(product, e)}>
-                          <Edit size={16} />
-                        </button>
-                        <button className="icon-button danger" onClick={(e) => handleDeleteProduct(product.id, e)}>
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                {productsLoading ? (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>
+                      Загрузка товаров...
                     </td>
                   </tr>
-                ))}
+                ) : paginatedProducts.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>
+                      Товары не найдены
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedProducts.map((product) => (
+                    <tr 
+                      key={product.id} 
+                      className={`product-row ${selectedProduct === product.id ? 'selected' : ''}`}
+                      onClick={() => handleProductSelect(product.id)}
+                    >
+                      <td className="product-cell">
+                        <div className="product-info">
+                          <div className="product-image">
+                            {product.image ? (
+                              <img src={product.image} alt={product.name} />
+                            ) : (
+                              <Package size={24} />
+                            )}
+                          </div>
+                          <span className="product-name">{product.name}</span>
+                        </div>
+                      </td>
+                      <td>{product.sku}</td>
+                      <td>
+                        <span className="badge badge-primary">
+                          {categories.find(c => c.id === product.categoryId)?.name || 'Без категории'}
+                        </span>
+                      </td>
+                      <td>₽{parseFloat(product.price.toString()).toFixed(2)}</td>
+                      <td>
+                        <div className="stock-indicator">
+                          <div 
+                            className={`stock-bar ${
+                              (product.totalStock || 0) <= (product.minStock || 0)
+                                ? 'low' 
+                                : (product.totalStock || 0) <= ((product.minStock || 0) * 2)
+                                  ? 'medium' 
+                                  : 'good'
+                            }`}
+                            style={{ width: `${Math.min(100, ((product.totalStock || 0) / ((product.minStock || 1) * 3)) * 100)}%` }}
+                          ></div>
+                          <span className="stock-text">{product.totalStock || 0} {product.unit}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="actions">
+                          <button className="icon-button" onClick={(e) => handleEditProduct(product, e)}>
+                            <Edit size={16} />
+                          </button>
+                          <button className="icon-button danger" onClick={(e) => handleDeleteProduct(product.id, e)}>
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
