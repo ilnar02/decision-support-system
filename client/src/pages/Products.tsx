@@ -369,7 +369,7 @@ const Products = () => {
             </div>
             
             <div className="product-actions">
-              <button className="btn btn-secondary" onClick={() => handleEditProduct(selectedProductData, {} as React.MouseEvent)}>
+              <button className="btn btn-secondary" onClick={(e) => handleEditProduct(selectedProductData, e)}>
                 <Edit size={16} />
                 Редактировать товар
               </button>
@@ -443,14 +443,14 @@ const ProductModal: React.FC<ProductModalProps> = ({
 }) => {
   const form = useForm({
     resolver: zodResolver(insertProductSchema.extend({
-      categoryId: insertProductSchema.shape.categoryId.optional(),
-      supplierId: insertProductSchema.shape.supplierId.optional(),
+      categoryId: insertProductSchema.shape.categoryId.nullable().optional(),
+      supplierId: insertProductSchema.shape.supplierId.nullable().optional(),
     })),
     defaultValues: {
       name: initialData?.name || '',
       sku: initialData?.sku || '',
-      categoryId: initialData?.categoryId || undefined,
-      supplierId: initialData?.supplierId || undefined,
+      categoryId: initialData?.categoryId || null,
+      supplierId: initialData?.supplierId || null,
       unit: initialData?.unit || '',
       weight: initialData?.weight || '',
       price: initialData?.price ? parseFloat(initialData.price.toString()) : 0,
@@ -517,7 +517,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <label htmlFor="categoryId">Категория</label>
               <select
                 id="categoryId"
-                {...form.register('categoryId')}
+                {...form.register('categoryId', { 
+                  setValueAs: (value) => value === '' ? null : parseInt(value)
+                })}
                 className="form-select"
               >
                 <option value="">Выберите категорию</option>
@@ -527,13 +529,18 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   </option>
                 ))}
               </select>
+              {form.formState.errors.categoryId && (
+                <span className="error-text">{form.formState.errors.categoryId.message}</span>
+              )}
             </div>
 
             <div className="form-group">
               <label htmlFor="supplierId">Поставщик</label>
               <select
                 id="supplierId"
-                {...form.register('supplierId')}
+                {...form.register('supplierId', { 
+                  setValueAs: (value) => value === '' ? null : parseInt(value)
+                })}
                 className="form-select"
               >
                 <option value="">Выберите поставщика</option>
@@ -543,6 +550,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   </option>
                 ))}
               </select>
+              {form.formState.errors.supplierId && (
+                <span className="error-text">{form.formState.errors.supplierId.message}</span>
+              )}
             </div>
           </div>
 
