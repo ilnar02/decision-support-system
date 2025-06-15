@@ -159,6 +159,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/products/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updateData = insertProductSchema.partial().parse(req.body);
+      const product = await storage.updateProduct(id, updateData);
+      
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      res.json(product);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Update product error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/products/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteProduct(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Delete product error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Warehouse routes
   app.get("/api/warehouses", async (req, res) => {
     try {
