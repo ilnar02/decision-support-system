@@ -96,7 +96,9 @@ This is a full-stack inventory management system built for construction material
 
 ```
 Changelog:
-- June 15, 2025. Initial setup
+- June 15, 2025. Initial setup and PostgreSQL migration completed
+- June 15, 2025. Product management functionality implemented with add/edit/delete capabilities
+- June 15, 2025. React Query integration with proper QueryClientProvider setup
 ```
 
 ## User Preferences
