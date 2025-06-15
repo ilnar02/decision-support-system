@@ -170,7 +170,7 @@ const Stores = () => {
   });
 
   // Get unique regions
-  const regions = Array.from(new Set(stores.map((store: StoreType) => store.region)));
+  const regions = Array.from(new Set(stores.map((store: StoreType) => store.region))) as string[];
 
   // Get region warehouses for delivery
   const getRegionWarehouses = (regionName: string) => {
@@ -450,7 +450,7 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({
           {/* Warehouse Selection */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Выберите склад ({store.city})
+              Выберите склад ({store.region})
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {warehouses.map((warehouse) => (
