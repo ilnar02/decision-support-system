@@ -206,6 +206,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Inventory methods
+  async getAllInventory(): Promise<Inventory[]> {
+    return await db.select().from(inventory);
+  }
+
   async getInventoryByLocation(locationId: number, locationType: string): Promise<Inventory[]> {
     return await db
       .select()
