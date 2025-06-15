@@ -246,6 +246,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Inventory routes
+  app.get("/api/inventory", async (req, res) => {
+    try {
+      const inventory = await storage.getAllInventory();
+      res.json(inventory);
+    } catch (error) {
+      console.error("Get all inventory error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.get("/api/inventory/location/:locationId/:locationType", async (req, res) => {
     try {
       const locationId = parseInt(req.params.locationId);

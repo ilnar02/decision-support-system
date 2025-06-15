@@ -46,6 +46,7 @@ export interface IStorage {
   createStore(store: InsertStore): Promise<Store>;
 
   // Inventory methods
+  getAllInventory(): Promise<Inventory[]>;
   getInventoryByLocation(locationId: number, locationType: string): Promise<Inventory[]>;
   getProductInventory(productId: number): Promise<Inventory[]>;
   updateInventory(inventory: InsertInventory): Promise<Inventory>;
