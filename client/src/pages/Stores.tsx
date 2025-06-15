@@ -101,8 +101,10 @@ const Stores = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
-      setShowDeliveryModal(false);
       toast({ title: 'Доставка выполнена успешно' });
+      setTimeout(() => {
+        setShowDeliveryModal(false);
+      }, 1500);
     },
     onError: () => {
       toast({ title: 'Ошибка при выполнении доставки', variant: 'destructive' });
@@ -127,8 +129,10 @@ const Stores = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
-      setShowSaleModal(false);
       toast({ title: 'Продажа зарегистрирована успешно' });
+      setTimeout(() => {
+        setShowSaleModal(false);
+      }, 1500);
     },
     onError: () => {
       toast({ title: 'Ошибка при регистрации продажи', variant: 'destructive' });
