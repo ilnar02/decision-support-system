@@ -29,22 +29,26 @@ const Products = () => {
 
   // Fetch products
   const { data: products = [], isLoading: productsLoading } = useQuery<ProductWithRelations[]>({
-    queryKey: ['/api/products']
+    queryKey: ['/api/products'],
+    queryFn: () => apiRequest('/api/products')
   });
 
   // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ['/api/categories']
+    queryKey: ['/api/categories'],
+    queryFn: () => apiRequest('/api/categories')
   });
 
   // Fetch suppliers
   const { data: suppliers = [] } = useQuery<Supplier[]>({
-    queryKey: ['/api/suppliers']
+    queryKey: ['/api/suppliers'],
+    queryFn: () => apiRequest('/api/suppliers')
   });
 
   // Get inventory for selected product
   const { data: inventory = [] } = useQuery<any[]>({
     queryKey: ['/api/inventory', selectedProduct],
+    queryFn: () => apiRequest(`/api/inventory/${selectedProduct}`),
     enabled: !!selectedProduct
   });
 
