@@ -65,24 +65,23 @@ const Warehouses = () => {
   // Queries
   const { data: warehouses = [], isLoading: warehousesLoading, error: warehousesError } = useQuery<WarehouseWithStats[]>({
     queryKey: ['/api/warehouses'],
+    queryFn: () => apiRequest('/api/warehouses'),
   });
-
-  // Debug logging
-  console.log('Warehouses data:', warehouses);
-  console.log('Loading state:', warehousesLoading);
-  console.log('Error:', warehousesError);
 
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ['/api/products'],
+    queryFn: () => apiRequest('/api/products'),
   });
 
   const { data: selectedWarehouseInventory = [], isLoading: inventoryLoading } = useQuery<Inventory[]>({
     queryKey: ['/api/inventory', selectedWarehouse, 'warehouse'],
+    queryFn: () => apiRequest(`/api/inventory/${selectedWarehouse}/warehouse`),
     enabled: !!selectedWarehouse,
   });
 
   const { data: recentTransactions = [] } = useQuery<Transaction[]>({
     queryKey: ['/api/transactions'],
+    queryFn: () => apiRequest('/api/transactions'),
   });
 
   // Mutations
