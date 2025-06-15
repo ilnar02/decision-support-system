@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Package, Search, Filter, Plus, Edit, Trash2, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -441,19 +441,48 @@ const ProductModal: React.FC<ProductModalProps> = ({
   initialData,
   isLoading = false
 }) => {
-  const form = useForm({
+  const form = useForm<any>({
     defaultValues: {
-      name: initialData?.name || '',
-      sku: initialData?.sku || '',
-      categoryId: initialData?.categoryId || null,
-      supplierId: initialData?.supplierId || null,
-      unit: initialData?.unit || '',
-      weight: initialData?.weight || '',
-      price: initialData?.price ? parseFloat(initialData.price.toString()) : 0,
-      minStock: initialData?.minStock || 0,
-      image: initialData?.image || '',
+      name: '',
+      sku: '',
+      categoryId: undefined,
+      supplierId: undefined,
+      unit: '',
+      weight: '',
+      price: 0,
+      minStock: 0,
+      image: '',
     }
   });
+
+  // Reset form when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        name: initialData.name || '',
+        sku: initialData.sku || '',
+        categoryId: initialData.categoryId || undefined,
+        supplierId: initialData.supplierId || undefined,
+        unit: initialData.unit || '',
+        weight: initialData.weight || '',
+        price: initialData.price ? parseFloat(initialData.price.toString()) : 0,
+        minStock: initialData.minStock || 0,
+        image: initialData.image || '',
+      });
+    } else {
+      form.reset({
+        name: '',
+        sku: '',
+        categoryId: undefined,
+        supplierId: undefined,
+        unit: '',
+        weight: '',
+        price: 0,
+        minStock: 0,
+        image: '',
+      });
+    }
+  }, [initialData, form]);
 
   const handleSubmit = (data: any) => {
     const submitData = {
