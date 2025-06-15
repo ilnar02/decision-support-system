@@ -99,6 +99,8 @@ Changelog:
 - June 15, 2025. Initial setup and PostgreSQL migration completed
 - June 15, 2025. Product management functionality implemented with add/edit/delete capabilities
 - June 15, 2025. React Query integration with proper QueryClientProvider setup
+- June 15, 2025. Fixed edit button errors and category field validation in product forms
+- June 15, 2025. Product add/edit forms now working with proper category and supplier integration
 ```
 
 ## User Preferences
