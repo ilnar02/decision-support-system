@@ -295,14 +295,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/transactions", async (req, res) => {
     try {
+      console.log("Transaction request body:", JSON.stringify(req.body, null, 2));
       const { items, ...transactionData } = req.body;
+      
+      if (!items || items.length === 0) {
+        return res.status(400).json({ message: "No items provided for transaction" });
+      }
+      
       const validatedTransaction = insertTransactionSchema.parse(transactionData);
       const validatedItems = items.map((item: any) => insertTransactionItemSchema.parse(item));
       
+      console.log("Validated transaction:", validatedTransaction);
+      console.log("Validated items:", validatedItems);
+      
       const transaction = await storage.createTransaction(validatedTransaction, validatedItems);
+      console.log("Transaction created successfully:", transaction.id);
       res.status(201).json(transaction);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("Validation error:", error.errors);
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
       console.error("Create transaction error:", error);
