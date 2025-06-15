@@ -40,6 +40,7 @@ export const products = pgTable("products", {
   supplierId: integer("supplier_id").references(() => suppliers.id),
   unit: text("unit").notNull(), // мешок, метр, упаковка, лист
   weight: text("weight"), // 50кг, 12мм x 12м, etc.
+  volume: decimal("volume", { precision: 8, scale: 3 }).notNull().default("0.010"), // Volume in m³
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   minStock: integer("min_stock").default(0),
   image: text("image"),

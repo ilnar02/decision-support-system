@@ -144,16 +144,28 @@ const Warehouses = () => {
     };
   });
 
-  // Calculate warehouse stats
+  // Calculate warehouse stats with volume-based capacity
   const getWarehouseStats = (warehouse: WarehouseType) => {
-    // Use existing usedCapacity from database if available, otherwise calculate from inventory
-    const usedCapacity = warehouse.usedCapacity || 0;
-    const capacityPercentage = warehouse.totalCapacity ? (usedCapacity / warehouse.totalCapacity) * 100 : 0;
+    const warehouseInventory = selectedWarehouseInventory.filter(
+      item => item.locationId === warehouse.id && item.locationType === 'warehouse'
+    );
+    
+    const totalProducts = warehouseInventory.reduce((sum, item) => sum + item.quantity, 0);
+    
+    // Calculate used volume in m³
+    const usedVolume = warehouseInventory.reduce((sum, item) => {
+      const productVolume = item.product?.volume ? parseFloat(item.product.volume) : 0.010;
+      return sum + (item.quantity * productVolume);
+    }, 0);
+    
+    const capacityPercentage = warehouse.totalCapacity > 0 
+      ? Math.min((usedVolume / warehouse.totalCapacity) * 100, 100)
+      : 0;
     
     return {
-      totalProducts: Math.floor(usedCapacity / 10), // Estimate products based on capacity
-      usedCapacity,
-      capacityPercentage
+      totalProducts,
+      usedVolume: Math.round(usedVolume * 100) / 100, // Round to 2 decimal places
+      capacityPercentage: Math.round(capacityPercentage * 10) / 10 // Round to 1 decimal place
     };
   };
 
