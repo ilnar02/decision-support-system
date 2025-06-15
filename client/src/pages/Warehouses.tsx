@@ -147,14 +147,15 @@ const Warehouses = () => {
   // Calculate warehouse stats with volume-based capacity
   const getWarehouseStats = (warehouse: WarehouseType) => {
     const warehouseInventory = selectedWarehouseInventory.filter(
-      item => item.locationId === warehouse.id && item.locationType === 'warehouse'
+      (item: Inventory) => item.locationId === warehouse.id && item.locationType === 'warehouse'
     );
     
-    const totalProducts = warehouseInventory.reduce((sum, item) => sum + item.quantity, 0);
+    const totalProducts = warehouseInventory.reduce((sum: number, item: Inventory) => sum + item.quantity, 0);
     
     // Calculate used volume in m³
-    const usedVolume = warehouseInventory.reduce((sum, item) => {
-      const productVolume = item.product?.volume ? parseFloat(item.product.volume) : 0.010;
+    const usedVolume = warehouseInventory.reduce((sum: number, item: Inventory) => {
+      const product = products.find(p => p.id === item.productId);
+      const productVolume = product?.volume ? parseFloat(product.volume) : 0.010;
       return sum + (item.quantity * productVolume);
     }, 0);
     
@@ -312,7 +313,10 @@ const Warehouses = () => {
                       <div>
                         <p className="text-sm text-gray-600">Заполнено</p>
                         <p className="text-xl font-bold text-gray-900">
-                          {Math.round(getWarehouseStats(selectedWarehouseData).capacityPercentage)}%
+                          {getWarehouseStats(selectedWarehouseData).capacityPercentage}%
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {getWarehouseStats(selectedWarehouseData).usedVolume} м³
                         </p>
                       </div>
                     </div>
@@ -324,7 +328,10 @@ const Warehouses = () => {
                       <div>
                         <p className="text-sm text-gray-600">Вместимость</p>
                         <p className="text-xl font-bold text-gray-900">
-                          {selectedWarehouseData.totalCapacity}
+                          {selectedWarehouseData.totalCapacity} м³
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {(selectedWarehouseData.totalCapacity - getWarehouseStats(selectedWarehouseData).usedVolume).toFixed(1)} м³ свободно
                         </p>
                       </div>
                     </div>
