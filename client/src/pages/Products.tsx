@@ -43,7 +43,7 @@ const Products = () => {
   });
 
   // Get inventory for selected product
-  const { data: inventory = [] } = useQuery({
+  const { data: inventory = [] } = useQuery<any[]>({
     queryKey: ['/api/inventory', selectedProduct],
     enabled: !!selectedProduct
   });
@@ -351,7 +351,7 @@ const Products = () => {
             </div>
             
             <div className="product-actions">
-              <button className="btn btn-secondary">
+              <button className="btn btn-secondary" onClick={() => handleEditProduct(selectedProductData, {} as React.MouseEvent)}>
                 <Edit size={16} />
                 Редактировать товар
               </button>
