@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertSupplierSchema, insertProductSchema, insertCategorySchema, insertWarehouseSchema, insertStoreSchema } from "@shared/schema";
+import { insertUserSchema, insertSupplierSchema, insertProductSchema, insertCategorySchema, insertWarehouseSchema, insertStoreSchema, insertTransactionSchema, insertTransactionItemSchema } from "@shared/schema";
 import { z } from "zod";
 import { seedDatabase } from "./seed";
 
@@ -269,6 +269,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get inventory for a location (warehouse or store)
+  app.get("/api/inventory/:locationId/:locationType", async (req, res) => {
+    try {
+      const locationId = parseInt(req.params.locationId);
+      const locationType = req.params.locationType;
+      const inventory = await storage.getInventoryByLocation(locationId, locationType);
+      res.json(inventory);
+    } catch (error) {
+      console.error("Get inventory by location error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Transaction routes
   app.get("/api/transactions", async (req, res) => {
     try {
@@ -276,6 +289,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(transactions);
     } catch (error) {
       console.error("Get transactions error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/transactions", async (req, res) => {
+    try {
+      const { items, ...transactionData } = req.body;
+      const validatedTransaction = insertTransactionSchema.parse(transactionData);
+      const validatedItems = items.map((item: any) => insertTransactionItemSchema.parse(item));
+      
+      const transaction = await storage.createTransaction(validatedTransaction, validatedItems);
+      res.status(201).json(transaction);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Create transaction error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
