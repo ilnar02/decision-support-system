@@ -2,6 +2,111 @@
   animation: fadeIn 0.3s ease-in-out;
 }
 
+/* Warehouse filters */
+.warehouse-filters {
+  display: flex;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+  padding: var(--spacing-3);
+  background: var(--neutral-50);
+  border-radius: var(--border-radius);
+}
+
+.warehouse-filters label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.warehouse-filters input[type="radio"] {
+  margin: 0;
+}
+
+/* Enhanced location stock display */
+.location-stock {
+  padding: var(--spacing-4);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--spacing-3);
+  transition: all 0.2s ease;
+}
+
+.location-stock:hover {
+  border-color: var(--primary-300);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.location-stock.low-stock {
+  border-color: var(--red-300);
+  background-color: var(--red-50);
+}
+
+.location-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-2);
+}
+
+.location-name {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.warehouse-type {
+  font-weight: normal;
+  color: var(--neutral-600);
+  font-size: 0.9rem;
+}
+
+.warning-icon {
+  font-size: 1.2rem;
+}
+
+.location-quantity {
+  font-weight: 500;
+  color: var(--primary-600);
+}
+
+.low-stock-text {
+  color: var(--red-600);
+  font-size: 0.8rem;
+  margin-left: var(--spacing-2);
+}
+
+.location-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  margin-bottom: var(--spacing-3);
+}
+
+.location-details small {
+  color: var(--neutral-600);
+  font-size: 0.8rem;
+}
+
+.location-stock-bar-container {
+  background-color: var(--neutral-200);
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.location-stock-bar {
+  height: 100%;
+  background-color: var(--primary-500);
+  transition: width 0.3s ease;
+}
+
+.location-stock-bar.low-stock-bar {
+  background-color: var(--red-500);
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;

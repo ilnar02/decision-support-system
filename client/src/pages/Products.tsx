@@ -21,6 +21,7 @@ const Products = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductWithRelations | null>(null);
+  const [warehouseFilter, setWarehouseFilter] = useState('all');
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -342,26 +343,77 @@ const Products = () => {
             
             <div className="stock-distribution">
               <h3>Распределение по складам</h3>
+              
+              {/* Warehouse Type Filter */}
+              <div className="warehouse-filters">
+                <label>
+                  <input 
+                    type="radio" 
+                    name="warehouseType" 
+                    value="all" 
+                    checked={warehouseFilter === 'all'}
+                    onChange={(e) => setWarehouseFilter(e.target.value)}
+                  />
+                  Все склады
+                </label>
+                <label>
+                  <input 
+                    type="radio" 
+                    name="warehouseType" 
+                    value="head" 
+                    checked={warehouseFilter === 'head'}
+                    onChange={(e) => setWarehouseFilter(e.target.value)}
+                  />
+                  Главные склады
+                </label>
+                <label>
+                  <input 
+                    type="radio" 
+                    name="warehouseType" 
+                    value="local" 
+                    checked={warehouseFilter === 'local'}
+                    onChange={(e) => setWarehouseFilter(e.target.value)}
+                  />
+                  Локальные склады
+                </label>
+              </div>
+
               <div className="location-stocks">
                 {inventory.length > 0 ? (
-                  inventory.map((item: any, index: number) => (
-                    <div className="location-stock" key={index}>
-                      <div className="location-info">
-                        <span className="location-name">
-                          {item.locationType === 'warehouse' ? 'Склад' : 'Магазин'} №{item.locationId}
-                        </span>
-                        <span className="location-quantity">{item.quantity} {selectedProductData.unit}</span>
-                      </div>
-                      <div className="location-stock-bar-container">
-                        <div 
-                          className="location-stock-bar"
-                          style={{ width: `${(item.quantity / (selectedProductData.totalStock || 1)) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))
+                  inventory
+                    .filter((item: any) => item.locationType === 'warehouse')
+                    .map((item: any, index: number) => {
+                      const warehouse = warehouses.find((w: any) => w.id === item.locationId);
+                      const isLowStock = item.quantity < (selectedProductData.minStock || 0);
+                      
+                      return (
+                        <div className={`location-stock ${isLowStock ? 'low-stock' : ''}`} key={index}>
+                          <div className="location-info">
+                            <span className="location-name">
+                              {warehouse?.name || `Склад №${item.locationId}`}
+                              <span className="warehouse-type">({warehouse?.type || 'неизвестно'})</span>
+                              {isLowStock && <span className="warning-icon">⚠️</span>}
+                            </span>
+                            <span className="location-quantity">
+                              {item.quantity} {selectedProductData.unit}
+                              {isLowStock && <span className="low-stock-text">(Мало товара)</span>}
+                            </span>
+                          </div>
+                          <div className="location-details">
+                            <small>Город: {warehouse?.city || 'Неизвестно'}</small>
+                            <small>Адрес: {warehouse?.address || 'Не указан'}</small>
+                          </div>
+                          <div className="location-stock-bar-container">
+                            <div 
+                              className={`location-stock-bar ${isLowStock ? 'low-stock-bar' : ''}`}
+                              style={{ width: `${(item.quantity / (selectedProductData.totalStock || 1)) * 100}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      );
+                    })
                 ) : (
-                  <p>Нет данных о распределении товара</p>
+                  <p>Нет данных о распределении товара по складам</p>
                 )}
               </div>
             </div>
@@ -525,7 +577,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 placeholder="Введите артикул"
               />
               {form.formState.errors.sku && (
-                <span className="error-text">{form.formState.errors.sku.message}</span>
+                <span className="error-text">{String(form.formState.errors.sku.message)}</span>
               )}
             </div>
           </div>
@@ -548,7 +600,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 ))}
               </select>
               {form.formState.errors.categoryId && (
-                <span className="error-text">{form.formState.errors.categoryId.message}</span>
+                <span className="error-text">{String(form.formState.errors.categoryId.message)}</span>
               )}
             </div>
 
@@ -583,7 +635,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 placeholder="мешок, метр, упаковка, лист"
               />
               {form.formState.errors.unit && (
-                <span className="error-text">{form.formState.errors.unit.message}</span>
+                <span className="error-text">{String(form.formState.errors.unit.message)}</span>
               )}
             </div>
 
@@ -616,7 +668,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 placeholder="0.00"
               />
               {form.formState.errors.price && (
-                <span className="error-text">{form.formState.errors.price.message}</span>
+                <span className="error-text">{String(form.formState.errors.price.message)}</span>
               )}
             </div>
 
