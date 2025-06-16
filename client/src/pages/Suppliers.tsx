@@ -16,12 +16,12 @@ import { Supplier, Product, Category, insertSupplierSchema } from '@shared/schem
 const supplierSchema = z.object({
   name: z.string().min(1, "Название обязательно"),
   specialization: z.string().min(1, "Специализация обязательна"),
-  email: z.string().email("Неверный формат email").optional().or(z.literal("")),
+  email: z.string().optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
   representative: z.string().optional(),
   representativePhone: z.string().optional(),
-  representativeEmail: z.string().email("Неверный формат email").optional().or(z.literal("")),
+  representativeEmail: z.string().optional(),
   minimumOrder: z.union([z.string(), z.number()]).optional(),
   paymentTerms: z.string().optional(),
   deliveryTime: z.string().optional(),
@@ -515,11 +515,22 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
   );
 
   const handleSubmit = (data: SupplierFormData) => {
+    // Convert form data to proper format for backend
     const submitData = {
-      ...data,
+      name: data.name,
+      specialization: data.specialization,
+      email: data.email || undefined,
+      phone: data.phone || undefined,
+      address: data.address || undefined,
+      representative: data.representative || undefined,
+      representativePhone: data.representativePhone || undefined,
+      representativeEmail: data.representativeEmail || undefined,
       minimumOrder: data.minimumOrder ? Number(data.minimumOrder) : undefined,
+      paymentTerms: data.paymentTerms || undefined,
+      deliveryTime: data.deliveryTime || undefined,
       deliveryCities: deliveryCitiesText.split(',').map(s => s.trim()).filter(Boolean),
       productCategories: selectedCategories,
+      notes: data.notes || undefined,
     };
     onSubmit(submitData);
   };
