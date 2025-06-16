@@ -25,7 +25,7 @@ const TRANSACTION_TYPES = {
     borderColor: 'border-purple-200'
   },
   incoming: {
-    label: 'Поступление на склад',
+    label: 'Поступление на склад (начальное)',
     icon: Package,
     color: 'bg-yellow-100 text-yellow-700',
     borderColor: 'border-yellow-200'
@@ -162,7 +162,7 @@ const Transactions: React.FC = () => {
       );
     }
 
-    return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return filtered.sort((a: Transaction, b: Transaction) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [enhancedTransactions, searchTerm, selectedType, selectedWarehouse, selectedStore, selectedProduct, startDate, endDate]);
 
   // Statistics
