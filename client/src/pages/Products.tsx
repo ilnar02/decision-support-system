@@ -431,7 +431,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
   onClose,
   onSubmit,
   categories,
-  suppliers,
   title,
   initialData,
   isLoading = false
@@ -441,9 +440,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
       name: '',
       sku: '',
       categoryId: undefined,
-      supplierId: undefined,
       unit: '',
       weight: '',
+      volume: 0.010,
       price: 0,
       minStock: 0,
       image: '',
@@ -457,9 +456,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
         name: initialData.name || '',
         sku: initialData.sku || '',
         categoryId: initialData.categoryId || undefined,
-        supplierId: initialData.supplierId || undefined,
         unit: initialData.unit || '',
         weight: initialData.weight || '',
+        volume: initialData.volume ? parseFloat(initialData.volume.toString()) : 0.010,
         price: initialData.price ? parseFloat(initialData.price.toString()) : 0,
         minStock: initialData.minStock || 0,
         image: initialData.image || '',
@@ -469,9 +468,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
         name: '',
         sku: '',
         categoryId: undefined,
-        supplierId: undefined,
         unit: '',
         weight: '',
+        volume: 0.010,
         price: 0,
         minStock: 0,
         image: '',
@@ -483,7 +482,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
     const submitData = {
       ...data,
       categoryId: data.categoryId || null,
-      supplierId: data.supplierId || null,
       price: data.price.toString(),
     };
     onSubmit(submitData);
@@ -513,7 +511,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 placeholder="Введите название товара"
               />
               {form.formState.errors.name && (
-                <span className="error-text">{form.formState.errors.name.message}</span>
+                <span className="error-text">{String(form.formState.errors.name.message)}</span>
               )}
             </div>
 
@@ -555,23 +553,21 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </div>
 
             <div className="form-group">
-              <label htmlFor="supplierId">Поставщик</label>
-              <select
-                id="supplierId"
-                {...form.register('supplierId', { 
-                  setValueAs: (value) => value === '' ? null : parseInt(value)
+              <label htmlFor="volume">Объем (м³) *</label>
+              <input
+                type="number"
+                id="volume"
+                step="0.001"
+                min="0"
+                {...form.register('volume', {
+                  required: 'Объем обязателен',
+                  valueAsNumber: true,
+                  min: { value: 0.001, message: 'Объем должен быть больше 0' }
                 })}
-                className="form-select"
-              >
-                <option value="">Выберите поставщика</option>
-                {suppliers.map((supplier) => (
-                  <option key={supplier.id} value={supplier.id}>
-                    {supplier.name}
-                  </option>
-                ))}
-              </select>
-              {form.formState.errors.supplierId && (
-                <span className="error-text">{form.formState.errors.supplierId.message}</span>
+                className="form-input"
+              />
+              {form.formState.errors.volume && (
+                <span className="error-text">{String(form.formState.errors.volume.message)}</span>
               )}
             </div>
           </div>
