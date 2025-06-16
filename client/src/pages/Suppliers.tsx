@@ -13,10 +13,21 @@ import { useToast } from '@/hooks/use-toast';
 import { Supplier, Product, Category, insertSupplierSchema } from '@shared/schema';
 
 // Form schemas
-const supplierSchema = insertSupplierSchema.extend({
+const supplierSchema = z.object({
+  name: z.string().min(1, "Название обязательно"),
+  specialization: z.string().min(1, "Специализация обязательна"),
+  email: z.string().email("Неверный формат email").optional().or(z.literal("")),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  representative: z.string().optional(),
+  representativePhone: z.string().optional(),
+  representativeEmail: z.string().email("Неверный формат email").optional().or(z.literal("")),
+  minimumOrder: z.union([z.string(), z.number()]).optional(),
+  paymentTerms: z.string().optional(),
+  deliveryTime: z.string().optional(),
   deliveryCities: z.array(z.string()).optional(),
   productCategories: z.array(z.string()).optional(),
-  minimumOrder: z.union([z.string(), z.number()]).optional(),
+  notes: z.string().optional(),
 });
 
 type SupplierFormData = z.infer<typeof supplierSchema>;
