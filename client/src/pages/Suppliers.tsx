@@ -114,6 +114,7 @@ const Suppliers: React.FC = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/suppliers', selectedSupplier?.id] });
       toast({ title: 'Поставщик добавлен успешно' });
       setShowAddModal(false);
     },
@@ -129,8 +130,13 @@ const Suppliers: React.FC = () => {
         method: 'PUT',
         body: JSON.stringify(data)
       }),
-    onSuccess: () => {
+    onSuccess: (updatedSupplier) => {
       queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/suppliers', selectedSupplier?.id] });
+      if (selectedSupplier) {
+        // Update the current selected supplier to reflect changes
+        setSelectedSupplier(updatedSupplier);
+      }
       toast({ title: 'Поставщик обновлен успешно' });
       setEditingSupplier(null);
     },
@@ -196,6 +202,7 @@ const Suppliers: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/warehouses'] });
       queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       toast({ title: 'Поставка успешно выполнена' });
       setShowDeliveryModal(false);
     },
@@ -535,9 +542,8 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({
   onSubmit,
   isLoading = false
 }) => {
-  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
-  const [quantity, setQuantity] = useState('');
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<number | null>(null);
+  const [deliveryItems, setDeliveryItems] = useState<Array<{ productId: number; quantity: number; price: number }>>([]);
 
   if (!isOpen || !supplier) return null;
 
@@ -552,13 +558,46 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({
     return product ? { ...product, supplierPrice: sp.supplierPrice } : null;
   }).filter((product): product is NonNullable<typeof product> => product !== null);
 
+  const addDeliveryItem = () => {
+    setDeliveryItems([...deliveryItems, { productId: 0, quantity: 1, price: 0 }]);
+  };
+
+  const removeDeliveryItem = (index: number) => {
+    setDeliveryItems(deliveryItems.filter((_, i) => i !== index));
+  };
+
+  const updateDeliveryItem = (index: number, field: string, value: any) => {
+    const updated = [...deliveryItems];
+    if (field === 'productId') {
+      const selectedProduct = availableProducts.find(p => p.id === Number(value));
+      updated[index] = {
+        ...updated[index],
+        productId: Number(value),
+        price: selectedProduct ? (selectedProduct.supplierPrice || selectedProduct.price) : 0
+      };
+    } else {
+      updated[index] = { ...updated[index], [field]: value };
+    }
+    setDeliveryItems(updated);
+  };
+
+  const getTotalCost = () => {
+    return deliveryItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+  };
+
   const handleSubmit = () => {
-    if (!selectedProductId || !quantity || !selectedWarehouseId) {
+    if (!selectedWarehouseId || deliveryItems.length === 0) {
       return;
     }
 
-    const selectedProduct = availableProducts.find(p => p.id === selectedProductId);
-    if (!selectedProduct) return;
+    // Validate all items have valid products and quantities
+    const validItems = deliveryItems.filter(item => 
+      item.productId > 0 && item.quantity > 0 && item.price > 0
+    );
+
+    if (validItems.length === 0) {
+      return;
+    }
 
     const deliveryData = {
       type: 'delivery',
@@ -566,19 +605,14 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({
       fromLocationType: null,
       toLocationId: selectedWarehouseId,
       toLocationType: 'warehouse',
-      items: [{
-        productId: selectedProductId,
-        quantity: Number(quantity),
-        price: selectedProduct.supplierPrice || selectedProduct.price
-      }]
+      items: validItems
     };
 
     onSubmit(deliveryData);
     
     // Reset form
-    setSelectedProductId(null);
-    setQuantity('');
     setSelectedWarehouseId(null);
+    setDeliveryItems([]);
   };
 
   return (
@@ -595,41 +629,6 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({
         </div>
 
         <div className="space-y-6">
-          {/* Product Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Товар для поставки
-            </label>
-            <select
-              value={selectedProductId || ''}
-              onChange={(e) => setSelectedProductId(e.target.value ? Number(e.target.value) : null)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Выберите товар ({availableProducts.length} доступно)</option>
-              {availableProducts.map(product => (
-                <option key={product.id} value={product.id}>
-                  {product.name} | {product.sku} | ₽{Number(product.supplierPrice || product.price).toFixed(2)} | {product.unit}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Quantity */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Количество
-            </label>
-            <input
-              type="number"
-              min="1"
-              step="1"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Введите количество"
-            />
-          </div>
-
           {/* Warehouse Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -660,25 +659,109 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({
             )}
           </div>
 
+          {/* Delivery Items */}
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Товары для поставки
+              </label>
+              <button
+                type="button"
+                onClick={addDeliveryItem}
+                disabled={availableProducts.length === 0}
+                className="flex items-center gap-1 px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
+                <Plus size={14} />
+                Добавить товар
+              </button>
+            </div>
+
+            {deliveryItems.length === 0 ? (
+              <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded">
+                Нажмите "Добавить товар" для начала формирования поставки
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {deliveryItems.map((item, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-sm font-medium text-gray-700">Товар #{index + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeDeliveryItem(index)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Товар</label>
+                        <select
+                          value={item.productId}
+                          onChange={(e) => updateDeliveryItem(index, 'productId', e.target.value)}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                        >
+                          <option value={0}>Выберите товар</option>
+                          {availableProducts.map(product => (
+                            <option key={product.id} value={product.id}>
+                              {product.name} | {product.sku}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Количество</label>
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={item.quantity}
+                          onChange={(e) => updateDeliveryItem(index, 'quantity', Number(e.target.value))}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                          placeholder="Кол-во"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Цена за единицу</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={item.price}
+                          onChange={(e) => updateDeliveryItem(index, 'price', Number(e.target.value))}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                          placeholder="₽"
+                        />
+                      </div>
+                    </div>
+                    
+                    {item.productId > 0 && item.quantity > 0 && item.price > 0 && (
+                      <div className="mt-2 text-sm text-gray-600">
+                        Стоимость: ₽{(item.quantity * item.price).toFixed(2)}
+                        {(() => {
+                          const product = availableProducts.find(p => p.id === item.productId);
+                          return product ? ` | ${product.unit}` : '';
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Delivery Summary */}
-          {selectedProductId && quantity && selectedWarehouseId && (
+          {deliveryItems.length > 0 && selectedWarehouseId && (
             <div className="bg-blue-50 p-4 rounded">
               <h4 className="font-medium text-blue-900 mb-2">Сводка поставки</h4>
               <div className="text-sm text-blue-800 space-y-1">
-                {(() => {
-                  const selectedProduct = availableProducts.find(p => p.id === selectedProductId);
-                  const selectedWarehouse = availableWarehouses.find(w => w.id === selectedWarehouseId);
-                  if (!selectedProduct || !selectedWarehouse) return null;
-                  
-                  return (
-                    <>
-                      <div>Товар: {selectedProduct.name}</div>
-                      <div>Количество: {quantity} {selectedProduct.unit}</div>
-                      <div>Склад: {selectedWarehouse.name}</div>
-                      <div>Общая стоимость: ₽{(Number(quantity) * Number(selectedProduct.supplierPrice || selectedProduct.price)).toFixed(2)}</div>
-                    </>
-                  );
-                })()}
+                <div>Склад: {availableWarehouses.find(w => w.id === selectedWarehouseId)?.name}</div>
+                <div>Товаров в поставке: {deliveryItems.filter(item => item.productId > 0).length}</div>
+                <div>Общая стоимость: ₽{getTotalCost().toFixed(2)}</div>
               </div>
             </div>
           )}
@@ -693,7 +776,7 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!selectedProductId || !quantity || !selectedWarehouseId || isLoading || availableWarehouses.length === 0}
+            disabled={!selectedWarehouseId || deliveryItems.length === 0 || deliveryItems.filter(item => item.productId > 0 && item.quantity > 0 && item.price > 0).length === 0 || isLoading || availableWarehouses.length === 0}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
