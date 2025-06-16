@@ -10,7 +10,6 @@ import './Products.css';
 
 type ProductWithRelations = Product & {
   category?: Category;
-  supplier?: Supplier;
   totalStock?: number;
 };
 
@@ -39,10 +38,10 @@ const Products = () => {
     queryFn: () => apiRequest('/api/categories')
   });
 
-  // Fetch suppliers
-  const { data: suppliers = [] } = useQuery<Supplier[]>({
-    queryKey: ['/api/suppliers'],
-    queryFn: () => apiRequest('/api/suppliers')
+  // Fetch warehouses for distribution display
+  const { data: warehouses = [] } = useQuery({
+    queryKey: ['/api/warehouses'],
+    queryFn: () => apiRequest('/api/warehouses')
   });
 
   // Get inventory for selected product
@@ -86,17 +85,18 @@ const Products = () => {
     }
   });
 
-  // Delete product mutation
+  // Delete product mutation (disabled - products used in transaction history)
   const deleteProductMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/products/${id}`, {
-      method: 'DELETE'
-    }),
+    mutationFn: (id: number) => Promise.resolve(), // No actual deletion
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
-      toast({ title: 'Товар удален успешно' });
+      toast({ 
+        title: 'Удаление товара недоступно', 
+        description: 'Товары нельзя удалять, так как они используются в истории транзакций',
+        variant: 'destructive' 
+      });
     },
     onError: () => {
-      toast({ title: 'Ошибка при удалении товара', variant: 'destructive' });
+      toast({ title: 'Удаление товара недоступно', variant: 'destructive' });
     }
   });
 
@@ -330,10 +330,8 @@ const Products = () => {
               </div>
               
               <div className="attribute">
-                <span className="attribute-label">Поставщик</span>
-                <span className="attribute-value">
-                  {suppliers.find(s => s.id === selectedProductData.supplierId)?.name || 'Не указан'}
-                </span>
+                <span className="attribute-label">Объем</span>
+                <span className="attribute-value">{selectedProductData.volume} м³</span>
               </div>
               
               <div className="attribute">
@@ -388,7 +386,6 @@ const Products = () => {
           onClose={() => setIsAddModalOpen(false)}
           onSubmit={(data) => addProductMutation.mutate(data)}
           categories={categories}
-          suppliers={suppliers}
           title="Добавить товар"
           isLoading={addProductMutation.isPending}
         />
@@ -409,7 +406,6 @@ const Products = () => {
             })
           }
           categories={categories}
-          suppliers={suppliers}
           title="Редактировать товар"
           initialData={editingProduct}
           isLoading={updateProductMutation.isPending}
@@ -425,7 +421,6 @@ interface ProductModalProps {
   onClose: () => void;
   onSubmit: (data: any) => void;
   categories: Category[];
-  suppliers: Supplier[];
   title: string;
   initialData?: ProductWithRelations;
   isLoading?: boolean;
