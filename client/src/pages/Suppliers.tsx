@@ -388,6 +388,7 @@ const Suppliers = () => {
           }
         }}
         supplier={editingSupplier}
+        categories={categories}
         isLoading={createMutation.isPending || updateMutation.isPending}
       />
 
@@ -420,6 +421,7 @@ interface SupplierModalProps {
   onClose: () => void;
   onSubmit: (data: SupplierFormData) => void;
   supplier?: SupplierWithStats | null;
+  categories: Category[];
   isLoading?: boolean;
 }
 
@@ -428,6 +430,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
   onClose,
   onSubmit,
   supplier,
+  categories,
   isLoading = false
 }) => {
   const form = useForm<SupplierFormData>({
@@ -454,8 +457,8 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
   const [deliveryCitiesText, setDeliveryCitiesText] = useState(
     supplier?.deliveryCities?.join(', ') || ''
   );
-  const [productCategoriesText, setProductCategoriesText] = useState(
-    supplier?.productCategories?.join(', ') || ''
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(
+    supplier?.productCategories || []
   );
 
   const handleSubmit = (data: SupplierFormData) => {
@@ -464,9 +467,17 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
       minimumOrder: data.minimumOrder ? Number(data.minimumOrder) : undefined,
       rating: data.rating ? Number(data.rating) : undefined,
       deliveryCities: deliveryCitiesText.split(',').map(s => s.trim()).filter(Boolean),
-      productCategories: productCategoriesText.split(',').map(s => s.trim()).filter(Boolean),
+      productCategories: selectedCategories,
     };
     onSubmit(submitData);
+  };
+
+  const toggleCategory = (categoryName: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(categoryName)
+        ? prev.filter(cat => cat !== categoryName)
+        : [...prev, categoryName]
+    );
   };
 
   if (!isOpen) return null;
@@ -637,14 +648,36 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Категории товаров (через запятую)
+              Категории товаров
             </label>
-            <input
-              value={productCategoriesText}
-              onChange={(e) => setProductCategoriesText(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Цемент, Арматура, Кирпич"
-            />
+            <div className="border border-gray-300 rounded-md p-3 max-h-32 overflow-y-auto bg-white">
+              {categories.length > 0 ? (
+                categories.map((category) => (
+                  <div key={category.id} className="flex items-center mb-2">
+                    <input
+                      type="checkbox"
+                      id={`category-${category.id}`}
+                      checked={selectedCategories.includes(category.name)}
+                      onChange={() => toggleCategory(category.name)}
+                      className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label 
+                      htmlFor={`category-${category.id}`}
+                      className="text-sm text-gray-700 cursor-pointer"
+                    >
+                      {category.name}
+                    </label>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500">Категории не найдены</p>
+              )}
+            </div>
+            {selectedCategories.length > 0 && (
+              <div className="mt-2 text-sm text-gray-600">
+                Выбрано: {selectedCategories.join(', ')}
+              </div>
+            )}
           </div>
 
           <div>
