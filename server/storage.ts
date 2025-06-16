@@ -6,7 +6,7 @@ import {
   type TransactionItem, type InsertTransactionItem
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -361,17 +361,72 @@ export class DatabaseStorage implements IStorage {
         quantity: transactionItems.quantity,
         price: transactionItems.price,
         productName: products.name,
+        productSku: products.sku,
+        fromWarehouseName: warehouses.name,
+        fromStoreName: stores.name,
+        toWarehouseName: sql`CASE 
+          WHEN ${transactions.toLocationType} = 'warehouse' THEN ${warehouses.name}
+          ELSE NULL 
+        END`.as('toWarehouseName'),
+        toStoreName: sql`CASE 
+          WHEN ${transactions.toLocationType} = 'store' THEN ${stores.name}
+          ELSE NULL 
+        END`.as('toStoreName')
       })
       .from(transactions)
       .leftJoin(transactionItems, eq(transactions.id, transactionItems.transactionId))
       .leftJoin(products, eq(transactionItems.productId, products.id))
-      .orderBy(transactions.createdAt);
+      .leftJoin(
+        warehouses, 
+        and(
+          eq(transactions.fromLocationId, warehouses.id),
+          eq(transactions.fromLocationType, 'warehouse')
+        )
+      )
+      .leftJoin(
+        stores, 
+        and(
+          eq(transactions.fromLocationId, stores.id),
+          eq(transactions.fromLocationType, 'store')
+        )
+      )
+      .orderBy(sql`${transactions.createdAt} DESC`);
+
+    // Get separate lookups for destination locations
+    const warehouseMap = new Map();
+    const storeMap = new Map();
+    
+    const allWarehouses = await db.select().from(warehouses);
+    const allStores = await db.select().from(stores);
+    
+    allWarehouses.forEach(w => warehouseMap.set(w.id, w.name));
+    allStores.forEach(s => storeMap.set(s.id, s.name));
 
     // Group by transaction
     const groupedTransactions: any = {};
     
     transactionsWithItems.forEach(row => {
       if (!groupedTransactions[row.id]) {
+        // Determine location names
+        let fromLocationName = null;
+        let toLocationName = null;
+        
+        if (row.fromLocationId) {
+          if (row.fromLocationType === 'warehouse') {
+            fromLocationName = row.fromWarehouseName || warehouseMap.get(row.fromLocationId);
+          } else if (row.fromLocationType === 'store') {
+            fromLocationName = row.fromStoreName || storeMap.get(row.fromLocationId);
+          }
+        }
+        
+        if (row.toLocationId) {
+          if (row.toLocationType === 'warehouse') {
+            toLocationName = warehouseMap.get(row.toLocationId);
+          } else if (row.toLocationType === 'store') {
+            toLocationName = storeMap.get(row.toLocationId);
+          }
+        }
+        
         groupedTransactions[row.id] = {
           id: row.id,
           type: row.type,
@@ -379,6 +434,8 @@ export class DatabaseStorage implements IStorage {
           fromLocationType: row.fromLocationType,
           toLocationId: row.toLocationId,
           toLocationType: row.toLocationType,
+          fromLocationName: fromLocationName,
+          toLocationName: toLocationName,
           notes: row.notes,
           createdAt: row.createdAt,
           items: [],
@@ -393,6 +450,7 @@ export class DatabaseStorage implements IStorage {
           id: row.itemId,
           productId: row.productId,
           productName: row.productName,
+          productSku: row.productSku,
           quantity: quantity,
           price: price,
           total: quantity * price
