@@ -47,9 +47,15 @@ const Products = () => {
 
   // Get inventory for selected product
   const { data: inventory = [] } = useQuery<any[]>({
-    queryKey: ['/api/inventory', selectedProduct],
-    queryFn: () => apiRequest(`/api/inventory/${selectedProduct}`),
+    queryKey: ['/api/inventory/product', selectedProduct],
+    queryFn: () => apiRequest(`/api/inventory/product/${selectedProduct}`),
     enabled: !!selectedProduct
+  });
+
+  // Get all inventory for total stock calculation
+  const { data: allInventory = [] } = useQuery<any[]>({
+    queryKey: ['/api/inventory'],
+    queryFn: () => apiRequest('/api/inventory')
   });
 
   // Add product mutation
@@ -101,8 +107,15 @@ const Products = () => {
     }
   });
 
+  // Calculate total stock for each product
+  const productsWithStock = products.map(product => {
+    const productInventory = allInventory.filter((inv: any) => inv.productId === product.id);
+    const totalStock = productInventory.reduce((sum: number, inv: any) => sum + inv.quantity, 0);
+    return { ...product, totalStock };
+  });
+
   // Filter products
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = productsWithStock.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           product.sku.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === '' || selectedCategory === 'all' || 
@@ -122,7 +135,7 @@ const Products = () => {
   };
   
   const selectedProductData = selectedProduct 
-    ? products.find(p => p.id === selectedProduct) 
+    ? productsWithStock.find(p => p.id === selectedProduct) 
     : null;
 
   const handleEditProduct = (product: ProductWithRelations, e: React.MouseEvent) => {
