@@ -103,6 +103,10 @@ Changelog:
 - June 15, 2025. Product add/edit forms now working with proper category and supplier integration
 - June 15, 2025. Resolved product editing form reset issues - forms now properly populate with existing data
 - June 15, 2025. Implemented warehouse management system with inventory tracking and transfer functionality
+- June 16, 2025. Enhanced sales history system with proper revenue tracking and transaction item pricing
+- June 16, 2025. Implemented autocomplete product filtering for better UX with large product catalogs
+- June 16, 2025. Added transaction detail view functionality to show individual receipt contents
+- June 16, 2025. Fixed sales amount calculation by adding price field to transaction items schema
 ```
 
 ## User Preferences
