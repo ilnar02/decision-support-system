@@ -22,7 +22,7 @@ const supplierSchema = z.object({
   representative: z.string().optional(),
   representativePhone: z.string().optional(),
   representativeEmail: z.string().optional(),
-  minimumOrder: z.coerce.number().optional(),
+  minimumOrder: z.coerce.number().int().positive().optional(),
   paymentTerms: z.string().optional(),
   deliveryTime: z.string().optional(),
   deliveryCities: z.array(z.string()).optional(),
@@ -525,7 +525,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
       representative: data.representative || undefined,
       representativePhone: data.representativePhone || undefined,
       representativeEmail: data.representativeEmail || undefined,
-      minimumOrder: data.minimumOrder,
+      minimumOrder: data.minimumOrder ? Math.floor(data.minimumOrder) : undefined,
       paymentTerms: data.paymentTerms || undefined,
       deliveryTime: data.deliveryTime || undefined,
       deliveryCities: deliveryCitiesText.split(',').map(s => s.trim()).filter(Boolean),
@@ -668,7 +668,8 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
               <input
                 {...form.register('minimumOrder', { valueAsNumber: true })}
                 type="number"
-                step="0.01"
+                step="1"
+                min="0"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="50000"
               />
