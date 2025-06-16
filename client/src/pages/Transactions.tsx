@@ -66,8 +66,8 @@ const Transactions: React.FC = () => {
 
   // Fetch data
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
-    queryKey: ['/api/transactions'],
-    queryFn: () => apiRequest('/api/transactions')
+    queryKey: ['/api/transactions/detailed'],
+    queryFn: () => apiRequest('/api/transactions/detailed')
   });
 
   const { data: products = [] } = useQuery({
