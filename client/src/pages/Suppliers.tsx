@@ -16,6 +16,8 @@ import { Supplier, Product, insertSupplierSchema } from '@shared/schema';
 const supplierSchema = insertSupplierSchema.extend({
   deliveryCities: z.array(z.string()).optional(),
   productCategories: z.array(z.string()).optional(),
+  minimumOrder: z.string().optional(),
+  rating: z.string().optional(),
 });
 
 type SupplierFormData = z.infer<typeof supplierSchema>;
@@ -433,12 +435,12 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
       representative: supplier?.representative || '',
       representativePhone: supplier?.representativePhone || '',
       representativeEmail: supplier?.representativeEmail || '',
-      minimumOrder: supplier?.minimumOrder ? Number(supplier.minimumOrder) : undefined,
+      minimumOrder: supplier?.minimumOrder ? supplier.minimumOrder.toString() : '',
       paymentTerms: supplier?.paymentTerms || '',
       deliveryTime: supplier?.deliveryTime || '',
       deliveryCities: supplier?.deliveryCities || [],
       productCategories: supplier?.productCategories || [],
-      rating: supplier?.rating ? Number(supplier.rating) : undefined,
+      rating: supplier?.rating ? supplier.rating.toString() : '0.0',
       notes: supplier?.notes || '',
     }
   });
@@ -453,6 +455,8 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
   const handleSubmit = (data: SupplierFormData) => {
     const submitData = {
       ...data,
+      minimumOrder: data.minimumOrder ? Number(data.minimumOrder) : undefined,
+      rating: data.rating ? Number(data.rating) : undefined,
       deliveryCities: deliveryCitiesText.split(',').map(s => s.trim()).filter(Boolean),
       productCategories: productCategoriesText.split(',').map(s => s.trim()).filter(Boolean),
     };
