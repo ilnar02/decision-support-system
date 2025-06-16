@@ -934,10 +934,10 @@ const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
   const [selectedProduct, setSelectedProduct] = useState('');
   const [viewMode, setViewMode] = useState<'history' | 'analytics'>('history');
 
-  // Get sales transactions for this store
+  // Get detailed sales transactions for this store
   const { data: allTransactions = [] } = useQuery({
-    queryKey: ['/api/transactions'],
-    queryFn: () => apiRequest('/api/transactions')
+    queryKey: ['/api/transactions/detailed'],
+    queryFn: () => apiRequest('/api/transactions/detailed')
   });
 
   // Filter sales transactions for this store
