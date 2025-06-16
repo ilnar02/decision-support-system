@@ -382,6 +382,11 @@ const Products = () => {
                 {inventory.length > 0 ? (
                   inventory
                     .filter((item: any) => item.locationType === 'warehouse')
+                    .filter((item: any) => {
+                      if (warehouseFilter === 'all') return true;
+                      const warehouse = warehouses.find((w: any) => w.id === item.locationId);
+                      return warehouse?.type === warehouseFilter;
+                    })
                     .map((item: any, index: number) => {
                       const warehouse = warehouses.find((w: any) => w.id === item.locationId);
                       const isLowStock = item.quantity < (selectedProductData.minStock || 0);
