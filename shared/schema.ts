@@ -54,7 +54,6 @@ export const products = pgTable("products", {
   name: text("name").notNull(),
   sku: text("sku").notNull().unique(),
   categoryId: integer("category_id").references(() => categories.id),
-  supplierId: integer("supplier_id").references(() => suppliers.id),
   unit: text("unit").notNull(), // мешок, метр, упаковка, лист
   weight: text("weight"), // 50кг, 12мм x 12м, etc.
   volume: decimal("volume", { precision: 8, scale: 3 }).notNull().default("0.010"), // Volume in m³
@@ -147,10 +146,6 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   category: one(categories, {
     fields: [products.categoryId],
     references: [categories.id],
-  }),
-  supplier: one(suppliers, {
-    fields: [products.supplierId],
-    references: [suppliers.id],
   }),
   inventory: many(inventory),
   transactionItems: many(transactionItems),

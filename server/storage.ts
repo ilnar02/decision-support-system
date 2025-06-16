@@ -120,12 +120,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteSupplier(id: number): Promise<boolean> {
-    // First, update any products that reference this supplier to null
-    await db.update(products)
-      .set({ supplierId: null })
-      .where(eq(products.supplierId, id));
-    
-    // Then delete supplier products relationships
+    // Delete supplier products relationships
     await db.delete(supplierProducts)
       .where(eq(supplierProducts.supplierId, id));
     
