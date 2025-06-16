@@ -480,6 +480,67 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
+      // Update inventory for deliveries (supplier deliveries to warehouses)
+      if (transaction.type === 'delivery' && transaction.toLocationId) {
+        for (const item of items) {
+          // Increase inventory at destination location (or create new record)
+          const [toInventory] = await tx
+            .select()
+            .from(inventory)
+            .where(
+              and(
+                eq(inventory.productId, item.productId),
+                eq(inventory.locationId, transaction.toLocationId),
+                eq(inventory.locationType, transaction.toLocationType || 'warehouse')
+              )
+            );
+
+          if (toInventory) {
+            await tx
+              .update(inventory)
+              .set({ 
+                quantity: toInventory.quantity + item.quantity,
+                lastUpdated: new Date()
+              })
+              .where(eq(inventory.id, toInventory.id));
+          } else {
+            await tx.insert(inventory).values({
+              productId: item.productId,
+              locationId: transaction.toLocationId,
+              locationType: transaction.toLocationType || 'warehouse',
+              quantity: item.quantity
+            });
+          }
+        }
+      }
+
+      // Update inventory for sales (decrease from store inventory)
+      if (transaction.type === 'sale' && transaction.fromLocationId) {
+        for (const item of items) {
+          // Decrease inventory at source location
+          const [fromInventory] = await tx
+            .select()
+            .from(inventory)
+            .where(
+              and(
+                eq(inventory.productId, item.productId),
+                eq(inventory.locationId, transaction.fromLocationId),
+                eq(inventory.locationType, transaction.fromLocationType || 'store')
+              )
+            );
+
+          if (fromInventory) {
+            await tx
+              .update(inventory)
+              .set({ 
+                quantity: Math.max(0, fromInventory.quantity - item.quantity),
+                lastUpdated: new Date()
+              })
+              .where(eq(inventory.id, fromInventory.id));
+          }
+        }
+      }
+
       return transaction;
     });
   }
