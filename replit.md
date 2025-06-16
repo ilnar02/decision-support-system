@@ -112,6 +112,7 @@ Changelog:
 - June 16, 2025. Implemented supplier-product relationship management with full CRUD operations
 - June 16, 2025. Enhanced UI layout with bigger detailed information section and moved edit/delete buttons
 - June 16, 2025. Removed rating field completely and fixed form data loading for supplier editing
+- June 16, 2025. Implemented product modifications: removed supplier assignment, added volume field, disabled deletion, enhanced warehouse distribution display with filtering and total stock calculation
 ```
 
 ## User Preferences
