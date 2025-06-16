@@ -1,16 +1,49 @@
 import React, { useState } from 'react';
-import { 
-  Truck, Search, Plus, Edit, Trash2, Phone, Mail, MapPin, 
-  Package, Clock, DollarSign, Star, User, Building, 
-  FileText, Send, Eye, X
-} from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { Plus, Search, Edit, Trash2, Package, Mail, Phone, MapPin, User, Clock, Truck, X } from 'lucide-react';
+import { apiRequest } from '../lib/queryClient';
+import { queryClient } from '../lib/queryClient';
+import { useToast } from '../hooks/use-toast';
 import { z } from 'zod';
-import { queryClient, apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
-import { Supplier, Product, Category, insertSupplierSchema } from '@shared/schema';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+// Types
+interface SupplierWithStats {
+  id: number;
+  name: string;
+  specialization: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  representative?: string;
+  representativePhone?: string;
+  representativeEmail?: string;
+  minimumOrder?: number;
+  paymentTerms?: string;
+  deliveryTime?: string;
+  deliveryCities?: string[];
+  productCategories?: string[];
+  notes?: string;
+}
+
+interface Product {
+  id: number;
+  name: string;
+  sku: string;
+  price: number;
+  unit: string;
+}
+
+interface Category {
+  id: number;
+  name: string;
+}
+
+interface Warehouse {
+  id: number;
+  name: string;
+  city: string;
+}
 
 // Form schemas
 const supplierSchema = z.object({
@@ -32,12 +65,7 @@ const supplierSchema = z.object({
 
 type SupplierFormData = z.infer<typeof supplierSchema>;
 
-type SupplierWithStats = Supplier & {
-  productsCount?: number;
-  activeProductsCount?: number;
-};
-
-const Suppliers = () => {
+const Suppliers: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSupplier, setSelectedSupplier] = useState<SupplierWithStats | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -52,7 +80,7 @@ const Suppliers = () => {
     queryFn: () => apiRequest('/api/suppliers')
   });
 
-  // Fetch products for supplier product management
+  // Fetch products
   const { data: products = [] } = useQuery({
     queryKey: ['/api/products'],
     queryFn: () => apiRequest('/api/products')
@@ -182,44 +210,40 @@ const Suppliers = () => {
   );
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Поставщики</h1>
-          <p className="text-gray-600">Управление поставщиками и их ассортиментом</p>
+          <p className="text-gray-600">Управление поставщиками и их продукцией</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
         >
-          <Plus size={16} />
+          <Plus size={20} />
           Добавить поставщика
         </button>
       </div>
 
-      {/* Search */}
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-          <input
-            type="text"
-            placeholder="Поиск поставщиков..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Suppliers List */}
-        <div>
+        <div className="space-y-4">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Поиск поставщиков..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
           {isLoading ? (
-            <div className="text-center py-8">Загрузка поставщиков...</div>
-          ) : filteredSuppliers.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              Поставщики не найдены
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="text-gray-500 mt-2">Загрузка поставщиков...</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -244,7 +268,6 @@ const Suppliers = () => {
                         </div>
                       </div>
                     </div>
-
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mb-3">
@@ -282,9 +305,9 @@ const Suppliers = () => {
         {/* Supplier Details */}
         <div className="lg:col-span-1">
           {selectedSupplier ? (
-            <div className="bg-white rounded-lg border p-4 sticky top-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium text-gray-900">Детали поставщика</h3>
+            <div className="bg-white rounded-lg border p-6 sticky top-6">
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-xl font-semibold">{selectedSupplier.name}</h2>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setEditingSupplier(selectedSupplier)}
@@ -378,7 +401,7 @@ const Suppliers = () => {
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Города доставки</h4>
                     <div className="flex flex-wrap gap-1">
-                      {selectedSupplier.deliveryCities.map((city, index) => (
+                      {selectedSupplier.deliveryCities.map((city: string, index: number) => (
                         <span key={index} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
                           {city}
                         </span>
@@ -391,7 +414,7 @@ const Suppliers = () => {
                   <div>
                     <h4 className="text-sm font-medium text-gray-700 mb-2">Категории товаров</h4>
                     <div className="flex flex-wrap gap-1">
-                      {selectedSupplier.productCategories.map((category, index) => (
+                      {selectedSupplier.productCategories.map((category: string, index: number) => (
                         <span key={index} className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
                           {category}
                         </span>
@@ -496,7 +519,7 @@ interface DeliveryModalProps {
   onClose: () => void;
   supplier: SupplierWithStats | null;
   products: Product[];
-  warehouses: Warehouse[];
+  warehouses: any[];
   supplierProducts: any[];
   onSubmit: (data: any) => void;
   isLoading?: boolean;
@@ -527,12 +550,15 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({
   const availableProducts = supplierProducts.map(sp => {
     const product = products.find(p => p.id === sp.productId);
     return product ? { ...product, supplierPrice: sp.supplierPrice } : null;
-  }).filter(Boolean);
+  }).filter((product): product is NonNullable<typeof product> => product !== null);
 
   const handleSubmit = () => {
     if (!selectedProductId || !quantity || !selectedWarehouseId) {
       return;
     }
+
+    const selectedProduct = availableProducts.find(p => p.id === selectedProductId);
+    if (!selectedProduct) return;
 
     const deliveryData = {
       type: 'delivery',
@@ -543,7 +569,7 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({
       items: [{
         productId: selectedProductId,
         quantity: Number(quantity),
-        price: availableProducts.find(p => p.id === selectedProductId)?.supplierPrice || 0
+        price: selectedProduct.supplierPrice || selectedProduct.price
       }]
     };
 
@@ -612,7 +638,7 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({
             {availableWarehouses.length === 0 ? (
               <div className="text-red-600 text-sm p-3 bg-red-50 rounded">
                 Нет доступных складов в городах доставки поставщика
-                {supplier.deliveryCities?.length > 0 && (
+                {supplier.deliveryCities && supplier.deliveryCities.length > 0 && (
                   <div className="mt-1">
                     Города доставки: {supplier.deliveryCities.join(', ')}
                   </div>
@@ -639,10 +665,20 @@ const DeliveryModal: React.FC<DeliveryModalProps> = ({
             <div className="bg-blue-50 p-4 rounded">
               <h4 className="font-medium text-blue-900 mb-2">Сводка поставки</h4>
               <div className="text-sm text-blue-800 space-y-1">
-                <div>Товар: {availableProducts.find(p => p.id === selectedProductId)?.name}</div>
-                <div>Количество: {quantity} {availableProducts.find(p => p.id === selectedProductId)?.unit}</div>
-                <div>Склад: {availableWarehouses.find(w => w.id === selectedWarehouseId)?.name}</div>
-                <div>Общая стоимость: ₽{(Number(quantity) * Number(availableProducts.find(p => p.id === selectedProductId)?.supplierPrice || availableProducts.find(p => p.id === selectedProductId)?.price || 0)).toFixed(2)}</div>
+                {(() => {
+                  const selectedProduct = availableProducts.find(p => p.id === selectedProductId);
+                  const selectedWarehouse = availableWarehouses.find(w => w.id === selectedWarehouseId);
+                  if (!selectedProduct || !selectedWarehouse) return null;
+                  
+                  return (
+                    <>
+                      <div>Товар: {selectedProduct.name}</div>
+                      <div>Количество: {quantity} {selectedProduct.unit}</div>
+                      <div>Склад: {selectedWarehouse.name}</div>
+                      <div>Общая стоимость: ₽{(Number(quantity) * Number(selectedProduct.supplierPrice || selectedProduct.price)).toFixed(2)}</div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -751,9 +787,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
     }
   }, [supplier, form]);
 
-  const [deliveryCitiesText, setDeliveryCitiesText] = useState(
-    supplier?.deliveryCities?.join(', ') || ''
-  );
+  const [deliveryCitiesText, setDeliveryCitiesText] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     supplier?.productCategories || []
   );
@@ -791,29 +825,32 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">
             {supplier ? 'Редактировать поставщика' : 'Добавить поставщика'}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
             <X size={24} />
           </button>
         </div>
 
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Название *
+                Название поставщика *
               </label>
               <input
                 {...form.register('name')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Название компании"
+                placeholder="ООО СтройКомплект"
               />
               {form.formState.errors.name && (
-                <p className="mt-1 text-sm text-red-600">{form.formState.errors.name.message}</p>
+                <p className="text-red-600 text-sm mt-1">{form.formState.errors.name.message}</p>
               )}
             </div>
 
@@ -827,7 +864,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
                 placeholder="Строительные материалы"
               />
               {form.formState.errors.specialization && (
-                <p className="mt-1 text-sm text-red-600">{form.formState.errors.specialization.message}</p>
+                <p className="text-red-600 text-sm mt-1">{form.formState.errors.specialization.message}</p>
               )}
             </div>
           </div>
@@ -841,7 +878,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
                 {...form.register('email')}
                 type="email"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="email@company.ru"
+                placeholder="info@company.ru"
               />
             </div>
 
@@ -864,7 +901,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
             <input
               {...form.register('address')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Полный адрес компании"
+              placeholder="г. Москва, ул. Строительная, 123"
             />
           </div>
 
@@ -876,7 +913,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
               <input
                 {...form.register('representative')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Имя представителя"
+                placeholder="Иван Иванов"
               />
             </div>
 
@@ -926,7 +963,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
               <input
                 {...form.register('paymentTerms')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Отсрочка 30 дней"
+                placeholder="30 дней с момента поставки"
               />
             </div>
 
@@ -937,7 +974,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
               <input
                 {...form.register('deliveryTime')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="2-3 дня"
+                placeholder="3-5 дней"
               />
             </div>
           </div>
@@ -947,6 +984,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
               Города доставки (через запятую)
             </label>
             <input
+              type="text"
               value={deliveryCitiesText}
               onChange={(e) => setDeliveryCitiesText(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -958,49 +996,34 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Категории товаров
             </label>
-            <div className="border border-gray-300 rounded-md p-3 max-h-32 overflow-y-auto bg-white">
-              {categories.length > 0 ? (
-                categories.map((category) => (
-                  <div key={category.id} className="flex items-center mb-2">
-                    <input
-                      type="checkbox"
-                      id={`category-${category.id}`}
-                      checked={selectedCategories.includes(category.name)}
-                      onChange={() => toggleCategory(category.name)}
-                      className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label 
-                      htmlFor={`category-${category.id}`}
-                      className="text-sm text-gray-700 cursor-pointer"
-                    >
-                      {category.name}
-                    </label>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500">Категории не найдены</p>
-              )}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 p-3 border border-gray-300 rounded-md max-h-40 overflow-y-auto">
+              {categories.map((category) => (
+                <label key={category.id} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedCategories.includes(category.name)}
+                    onChange={() => toggleCategory(category.name)}
+                    className="rounded"
+                  />
+                  <span className="text-sm">{category.name}</span>
+                </label>
+              ))}
             </div>
-            {selectedCategories.length > 0 && (
-              <div className="mt-2 text-sm text-gray-600">
-                Выбрано: {selectedCategories.join(', ')}
-              </div>
-            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Примечания
+              Заметки
             </label>
             <textarea
               {...form.register('notes')}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Дополнительная информация о поставщике"
+              placeholder="Дополнительная информация о поставщике..."
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-end gap-3 pt-6 border-t">
             <button
               type="button"
               onClick={onClose}
@@ -1011,10 +1034,10 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
               {isLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
-              {supplier ? 'Обновить' : 'Добавить'}
+              {supplier ? 'Обновить' : 'Создать'} поставщика
             </button>
           </div>
         </form>
@@ -1047,13 +1070,15 @@ const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
-  const [supplierPrice, setSupplierPrice] = useState<string>('');
+  const [supplierPrice, setSupplierPrice] = useState('');
 
-  const supplierProductIds = new Set(supplierProducts.map(sp => sp.productId));
-  
-  const availableProducts = products.filter(product =>
-    !supplierProductIds.has(product.id) &&
-    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+  if (!isOpen || !supplier) return null;
+
+  const supplierProductIds = supplierProducts.map(sp => sp.productId);
+  const availableProducts = products.filter(product => 
+    !supplierProductIds.includes(product.id) &&
+    (product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+     product.sku.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleAddProduct = () => {
@@ -1064,16 +1089,15 @@ const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({
     }
   };
 
-  if (!isOpen || !supplier) return null;
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto m-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">
-            Товары поставщика: {supplier.name}
-          </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <h2 className="text-xl font-semibold">Управление товарами - {supplier.name}</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
             <X size={24} />
           </button>
         </div>
@@ -1166,7 +1190,6 @@ const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({
                   Добавить товар
                 </button>
               </div>
-
 
             </div>
           </div>
