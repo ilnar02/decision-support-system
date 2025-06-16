@@ -77,13 +77,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/suppliers", async (req, res) => {
     try {
-      console.log("Received supplier data:", JSON.stringify(req.body, null, 2));
       const supplierData = insertSupplierSchema.parse(req.body);
       const supplier = await storage.createSupplier(supplierData);
       res.status(201).json(supplier);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.log("Validation errors:", error.errors);
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
       console.error("Create supplier error:", error);
