@@ -1082,21 +1082,46 @@ const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Filter size={16} className="inline mr-1" />
               Товар
             </label>
-            <select
-              value={selectedProduct}
-              onChange={(e) => setSelectedProduct(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Все товары</option>
-              {products.map(product => (
-                <option key={product.id} value={product.name}>{product.name}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <input
+                type="text"
+                value={productSearchTerm}
+                onChange={(e) => {
+                  setProductSearchTerm(e.target.value);
+                  setShowProductDropdown(true);
+                }}
+                onFocus={() => setShowProductDropdown(true)}
+                onBlur={() => setTimeout(() => setShowProductDropdown(false), 200)}
+                placeholder="Начните печатать название товара..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-8"
+              />
+              {selectedProduct && (
+                <button
+                  onClick={clearProductFilter}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              )}
+              {showProductDropdown && productSearchTerm && filteredProducts.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                  {filteredProducts.map(product => (
+                    <button
+                      key={product.id}
+                      onClick={() => handleProductSelect(product.name)}
+                      className="w-full px-3 py-2 text-left hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
+                    >
+                      {product.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -1126,15 +1151,21 @@ const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
                           {transaction.notes}
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex flex-col items-end gap-2">
                         <div className="font-bold text-green-600">
-                          ₽{(transaction.totalAmount || 0).toFixed(2)}
+                          ₽{((transaction as any).totalAmount || 0).toFixed(2)}
                         </div>
-                        {transaction.items && transaction.items.length > 0 && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {transaction.items.length} товар(ов)
+                        {(transaction as any).items && (transaction as any).items.length > 0 && (
+                          <div className="text-xs text-gray-500">
+                            {(transaction as any).items.length} товар(ов)
                           </div>
                         )}
+                        <button
+                          onClick={() => setSelectedTransactionDetails(transaction)}
+                          className="px-3 py-1 text-xs bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition-colors"
+                        >
+                          Просмотр чека
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1204,6 +1235,53 @@ const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
             Закрыть
           </button>
         </div>
+
+        {/* Transaction Detail Modal */}
+        {selectedTransactionDetails && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-medium mb-4">Чек продажи #{selectedTransactionDetails.id}</h3>
+              
+              <div className="mb-4">
+                <div className="text-sm text-gray-600 mb-2">
+                  Дата: {new Date(selectedTransactionDetails.createdAt || '').toLocaleDateString('ru-RU')}
+                </div>
+                <div className="text-sm text-gray-600 mb-4">
+                  {selectedTransactionDetails.notes}
+                </div>
+              </div>
+
+              <div className="space-y-2 mb-4">
+                <h4 className="font-medium text-gray-700">Товары:</h4>
+                {(selectedTransactionDetails as any).items?.map((item: any, index: number) => (
+                  <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div>
+                      <div className="font-medium">{item.productName}</div>
+                      <div className="text-sm text-gray-600">₽{item.price} × {item.quantity}</div>
+                    </div>
+                    <div className="font-medium">₽{item.total.toFixed(2)}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex justify-between items-center font-bold text-lg">
+                  <span>Итого:</span>
+                  <span className="text-green-600">₽{((selectedTransactionDetails as any).totalAmount || 0).toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setSelectedTransactionDetails(null)}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Закрыть
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
