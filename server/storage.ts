@@ -54,6 +54,7 @@ export interface IStorage {
 
   // Transaction methods
   getAllTransactions(): Promise<Transaction[]>;
+  getAllTransactionsWithItems(): Promise<any[]>;
   getTransaction(id: number): Promise<Transaction | undefined>;
   createTransaction(transaction: InsertTransaction, items: InsertTransactionItem[]): Promise<Transaction>;
 }
@@ -264,6 +265,64 @@ export class DatabaseStorage implements IStorage {
   // Transaction methods
   async getAllTransactions(): Promise<Transaction[]> {
     return await db.select().from(transactions);
+  }
+
+  async getAllTransactionsWithItems(): Promise<any[]> {
+    const transactionsWithItems = await db
+      .select({
+        id: transactions.id,
+        type: transactions.type,
+        fromLocationId: transactions.fromLocationId,
+        fromLocationType: transactions.fromLocationType,
+        toLocationId: transactions.toLocationId,
+        toLocationType: transactions.toLocationType,
+        notes: transactions.notes,
+        createdAt: transactions.createdAt,
+        itemId: transactionItems.id,
+        productId: transactionItems.productId,
+        quantity: transactionItems.quantity,
+        price: transactionItems.price,
+        productName: products.name,
+      })
+      .from(transactions)
+      .leftJoin(transactionItems, eq(transactions.id, transactionItems.transactionId))
+      .leftJoin(products, eq(transactionItems.productId, products.id))
+      .orderBy(transactions.createdAt);
+
+    // Group by transaction
+    const groupedTransactions: any = {};
+    
+    transactionsWithItems.forEach(row => {
+      if (!groupedTransactions[row.id]) {
+        groupedTransactions[row.id] = {
+          id: row.id,
+          type: row.type,
+          fromLocationId: row.fromLocationId,
+          fromLocationType: row.fromLocationType,
+          toLocationId: row.toLocationId,
+          toLocationType: row.toLocationType,
+          notes: row.notes,
+          createdAt: row.createdAt,
+          items: [],
+          totalAmount: 0
+        };
+      }
+      
+      if (row.itemId) {
+        const item = {
+          id: row.itemId,
+          productId: row.productId,
+          productName: row.productName,
+          quantity: row.quantity,
+          price: row.price || 0,
+          total: (row.quantity || 0) * (row.price || 0)
+        };
+        groupedTransactions[row.id].items.push(item);
+        groupedTransactions[row.id].totalAmount += item.total;
+      }
+    });
+
+    return Object.values(groupedTransactions);
   }
 
   async getTransaction(id: number): Promise<Transaction | undefined> {

@@ -97,6 +97,7 @@ export const transactionItems = pgTable("transaction_items", {
   transactionId: integer("transaction_id").references(() => transactions.id).notNull(),
   productId: integer("product_id").references(() => products.id).notNull(),
   quantity: integer("quantity").notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }),
 });
 
 // Relations

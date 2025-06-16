@@ -303,6 +303,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get transactions with items and product details
+  app.get("/api/transactions/detailed", async (req, res) => {
+    try {
+      const transactions = await storage.getAllTransactionsWithItems();
+      res.json(transactions);
+    } catch (error) {
+      console.error("Get detailed transactions error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.post("/api/transactions", async (req, res) => {
     try {
       console.log("Transaction request body:", JSON.stringify(req.body, null, 2));
