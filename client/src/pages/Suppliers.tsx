@@ -126,6 +126,7 @@ const Suppliers = () => {
         body: JSON.stringify({ productId, supplierPrice })
       }),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
       queryClient.invalidateQueries({ queryKey: ['/api/suppliers', selectedSupplier?.id, 'products'] });
       toast({ title: 'Товар добавлен к поставщику' });
     },
@@ -141,6 +142,7 @@ const Suppliers = () => {
         method: 'DELETE'
       }),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
       queryClient.invalidateQueries({ queryKey: ['/api/suppliers', selectedSupplier?.id, 'products'] });
       toast({ title: 'Товар удален у поставщика' });
     },
@@ -238,25 +240,14 @@ const Suppliers = () => {
                     </div>
                   )}
 
-                  <div className="flex gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedSupplier(supplier);
-                        setShowProductsModal(true);
-                      }}
-                      className="flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
-                    >
-                      <Package size={14} />
-                      Товары
-                    </button>
-                    {supplier.deliveryTime && (
+                  {supplier.deliveryTime && (
+                    <div className="flex gap-2">
                       <span className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded text-sm">
                         <Clock size={14} />
                         {supplier.deliveryTime}
                       </span>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -298,7 +289,24 @@ const Suppliers = () => {
                   <div className="space-y-2 text-sm">
                     <div><span className="text-gray-600">Название:</span> {selectedSupplier.name}</div>
                     <div><span className="text-gray-600">Специализация:</span> {selectedSupplier.specialization}</div>
-
+                    {selectedSupplier.email && (
+                      <div className="flex items-center gap-2">
+                        <Mail size={14} />
+                        <span className="text-gray-600">Email:</span> {selectedSupplier.email}
+                      </div>
+                    )}
+                    {selectedSupplier.phone && (
+                      <div className="flex items-center gap-2">
+                        <Phone size={14} />
+                        <span className="text-gray-600">Телефон:</span> {selectedSupplier.phone}
+                      </div>
+                    )}
+                    {selectedSupplier.address && (
+                      <div className="flex items-center gap-2">
+                        <MapPin size={14} />
+                        <span className="text-gray-600">Адрес:</span> {selectedSupplier.address}
+                      </div>
+                    )}
                   </div>
                 </div>
 
