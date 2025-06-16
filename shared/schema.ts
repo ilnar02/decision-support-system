@@ -212,6 +212,7 @@ export const insertSupplierSchema = createInsertSchema(suppliers).omit({
   id: true,
   createdAt: true,
 }).extend({
+  minimumOrder: z.number().optional(),
   deliveryCities: z.array(z.string()).optional(),
   productCategories: z.array(z.string()).optional(),
 });
