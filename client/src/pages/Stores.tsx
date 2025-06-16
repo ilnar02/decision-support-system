@@ -941,12 +941,12 @@ const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
   });
 
   // Filter sales transactions for this store
-  const salesTransactions = allTransactions.filter((t: Transaction) => 
+  const salesTransactions = allTransactions.filter((t: any) => 
     t.type === 'sale' && t.fromLocationId === store.id
   );
 
   // Apply date and product filters
-  const filteredTransactions = salesTransactions.filter((transaction: Transaction) => {
+  const filteredTransactions = salesTransactions.filter((transaction: any) => {
     let matches = true;
     
     if (dateFrom) {
@@ -960,21 +960,18 @@ const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
     }
     
     if (selectedProduct) {
-      // This would need transaction items to filter by product
-      // For now, we'll filter by notes containing product info
-      matches = matches && (transaction.notes?.includes(selectedProduct) || false);
+      // Filter by actual product in transaction items
+      matches = matches && transaction.items?.some((item: any) => item.productName === selectedProduct);
     }
     
     return matches;
   });
 
-  // Calculate analytics
+  // Calculate analytics from transaction items
   const analytics = {
     totalSales: filteredTransactions.length,
-    totalRevenue: filteredTransactions.reduce((sum, t) => {
-      // Extract revenue from notes (simplified approach)
-      const revenueMatch = t.notes?.match(/₽([\d,]+\.?\d*)/);
-      return sum + (revenueMatch ? parseFloat(revenueMatch[1].replace(',', '')) : 0);
+    totalRevenue: filteredTransactions.reduce((sum: number, t: any) => {
+      return sum + (t.totalAmount || 0);
     }, 0),
     averageTransaction: 0,
     topProducts: [] as any[]
@@ -982,18 +979,23 @@ const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
 
   analytics.averageTransaction = analytics.totalSales > 0 ? analytics.totalRevenue / analytics.totalSales : 0;
 
-  // Product sales statistics (simplified)
+  // Product sales statistics from transaction items
   const productStats = products.map(product => {
-    const productSales = filteredTransactions.filter(t => 
-      t.notes?.includes(product.name) || false
-    );
+    let productSales = 0;
+    let productRevenue = 0;
+    
+    filteredTransactions.forEach((transaction: any) => {
+      const productItems = transaction.items?.filter((item: any) => item.productName === product.name) || [];
+      if (productItems.length > 0) {
+        productSales += 1;
+        productRevenue += productItems.reduce((sum: number, item: any) => sum + (item.total || 0), 0);
+      }
+    });
+    
     return {
       product: product.name,
-      sales: productSales.length,
-      revenue: productSales.reduce((sum, t) => {
-        const revenueMatch = t.notes?.match(/₽([\d,]+\.?\d*)/);
-        return sum + (revenueMatch ? parseFloat(revenueMatch[1].replace(',', '')) : 0);
-      }, 0)
+      sales: productSales,
+      revenue: productRevenue
     };
   }).filter(stat => stat.sales > 0).sort((a, b) => b.revenue - a.revenue);
 
@@ -1103,11 +1105,13 @@ const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
                       </div>
                       <div className="text-right">
                         <div className="font-bold text-green-600">
-                          {(() => {
-                            const revenueMatch = transaction.notes?.match(/₽([\d,]+\.?\d*)/);
-                            return revenueMatch ? `₽${revenueMatch[1]}` : '₽0.00';
-                          })()}
+                          ₽{(transaction.totalAmount || 0).toFixed(2)}
                         </div>
+                        {transaction.items && transaction.items.length > 0 && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            {transaction.items.length} товар(ов)
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
