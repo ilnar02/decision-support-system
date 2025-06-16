@@ -124,7 +124,11 @@ const Stores = () => {
           toLocationId: null,
           toLocationType: null,
           notes: `Продажа: ${data.customerName}${data.customerPhone ? ` (${data.customerPhone})` : ''}${data.notes ? `. ${data.notes}` : ''}`,
-          items: data.items
+          items: data.items.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price.toString()
+          }))
         })
       }),
     onSuccess: () => {
@@ -932,7 +936,10 @@ const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selectedProduct, setSelectedProduct] = useState('');
+  const [productSearchTerm, setProductSearchTerm] = useState('');
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [viewMode, setViewMode] = useState<'history' | 'analytics'>('history');
+  const [selectedTransactionDetails, setSelectedTransactionDetails] = useState<any>(null);
 
   // Get detailed sales transactions for this store
   const { data: allTransactions = [] } = useQuery({
@@ -1000,6 +1007,22 @@ const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
   }).filter(stat => stat.sales > 0).sort((a, b) => b.revenue - a.revenue);
 
   analytics.topProducts = productStats.slice(0, 5);
+
+  // Filtered products for autocomplete
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(productSearchTerm.toLowerCase())
+  ).slice(0, 10);
+
+  const handleProductSelect = (productName: string) => {
+    setSelectedProduct(productName);
+    setProductSearchTerm(productName);
+    setShowProductDropdown(false);
+  };
+
+  const clearProductFilter = () => {
+    setSelectedProduct('');
+    setProductSearchTerm('');
+  };
 
   if (!isOpen) return null;
 
