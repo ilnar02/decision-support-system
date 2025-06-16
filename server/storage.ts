@@ -309,16 +309,18 @@ export class DatabaseStorage implements IStorage {
       }
       
       if (row.itemId) {
+        const price = Number(row.price) || 0;
+        const quantity = row.quantity || 0;
         const item = {
           id: row.itemId,
           productId: row.productId,
           productName: row.productName,
-          quantity: row.quantity,
-          price: row.price || 0,
-          total: (row.quantity || 0) * (row.price || 0)
+          quantity: quantity,
+          price: price,
+          total: quantity * price
         };
         groupedTransactions[row.id].items.push(item);
-        groupedTransactions[row.id].totalAmount += item.total;
+        groupedTransactions[row.id].totalAmount += Number(item.total);
       }
     });
 
