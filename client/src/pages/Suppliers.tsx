@@ -174,9 +174,9 @@ const Suppliers = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Suppliers List */}
-        <div className="lg:col-span-2">
+        <div>
           {isLoading ? (
             <div className="text-center py-8">Загрузка поставщиков...</div>
           ) : filteredSuppliers.length === 0 ? (
@@ -206,28 +206,7 @@ const Suppliers = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingSupplier(supplier);
-                        }}
-                        className="p-1 text-gray-400 hover:text-blue-600"
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm('Вы уверены, что хотите удалить этого поставщика?')) {
-                            deleteMutation.mutate(supplier.id);
-                          }
-                        }}
-                        className="p-1 text-gray-400 hover:text-red-600"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mb-3">
@@ -277,7 +256,30 @@ const Suppliers = () => {
         <div className="lg:col-span-1">
           {selectedSupplier ? (
             <div className="bg-white rounded-lg border p-4 sticky top-6">
-              <h3 className="font-medium text-gray-900 mb-4">Детали поставщика</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-medium text-gray-900">Детали поставщика</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setEditingSupplier(selectedSupplier)}
+                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-1"
+                  >
+                    <Edit size={14} />
+                    Редактировать
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm('Вы уверены, что хотите удалить этого поставщика?')) {
+                        deleteMutation.mutate(selectedSupplier.id);
+                        setSelectedSupplier(null);
+                      }
+                    }}
+                    className="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center gap-1"
+                  >
+                    <Trash2 size={14} />
+                    Удалить
+                  </button>
+                </div>
+              </div>
               
               <div className="space-y-4">
                 <div>
@@ -434,23 +436,65 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
   const form = useForm<SupplierFormData>({
     resolver: zodResolver(supplierSchema),
     defaultValues: {
-      name: supplier?.name || '',
-      specialization: supplier?.specialization || '',
-      email: supplier?.email || '',
-      phone: supplier?.phone || '',
-      address: supplier?.address || '',
-      representative: supplier?.representative || '',
-      representativePhone: supplier?.representativePhone || '',
-      representativeEmail: supplier?.representativeEmail || '',
-      minimumOrder: supplier?.minimumOrder ? supplier.minimumOrder.toString() : '',
-      paymentTerms: supplier?.paymentTerms || '',
-      deliveryTime: supplier?.deliveryTime || '',
-      deliveryCities: supplier?.deliveryCities || [],
-      productCategories: supplier?.productCategories || [],
-
-      notes: supplier?.notes || '',
+      name: '',
+      specialization: '',
+      email: '',
+      phone: '',
+      address: '',
+      representative: '',
+      representativePhone: '',
+      representativeEmail: '',
+      minimumOrder: '',
+      paymentTerms: '',
+      deliveryTime: '',
+      deliveryCities: [],
+      productCategories: [],
+      notes: '',
     }
   });
+
+  // Reset form when supplier changes
+  React.useEffect(() => {
+    if (supplier) {
+      form.reset({
+        name: supplier.name || '',
+        specialization: supplier.specialization || '',
+        email: supplier.email || '',
+        phone: supplier.phone || '',
+        address: supplier.address || '',
+        representative: supplier.representative || '',
+        representativePhone: supplier.representativePhone || '',
+        representativeEmail: supplier.representativeEmail || '',
+        minimumOrder: supplier.minimumOrder ? supplier.minimumOrder.toString() : '',
+        paymentTerms: supplier.paymentTerms || '',
+        deliveryTime: supplier.deliveryTime || '',
+        deliveryCities: supplier.deliveryCities || [],
+        productCategories: supplier.productCategories || [],
+        notes: supplier.notes || '',
+      });
+      setDeliveryCitiesText(supplier.deliveryCities?.join(', ') || '');
+      setSelectedCategories(supplier.productCategories || []);
+    } else {
+      form.reset({
+        name: '',
+        specialization: '',
+        email: '',
+        phone: '',
+        address: '',
+        representative: '',
+        representativePhone: '',
+        representativeEmail: '',
+        minimumOrder: '',
+        paymentTerms: '',
+        deliveryTime: '',
+        deliveryCities: [],
+        productCategories: [],
+        notes: '',
+      });
+      setDeliveryCitiesText('');
+      setSelectedCategories([]);
+    }
+  }, [supplier, form]);
 
   const [deliveryCitiesText, setDeliveryCitiesText] = useState(
     supplier?.deliveryCities?.join(', ') || ''
