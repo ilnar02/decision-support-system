@@ -3,7 +3,7 @@ import { Package, Search, Filter, Plus, Edit, Trash2, ChevronLeft, ChevronRight,
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { insertProductSchema, type Product, type Category, type Supplier } from '@shared/schema';
+import { insertProductSchema, type Product, type Category } from '@shared/schema';
 import { apiRequest } from '../lib/queryClient';
 import { useToast } from '../hooks/use-toast';
 import './Products.css';
