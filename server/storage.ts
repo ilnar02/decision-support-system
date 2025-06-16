@@ -22,6 +22,10 @@ export interface IStorage {
   createSupplier(supplier: InsertSupplier): Promise<Supplier>;
   updateSupplier(id: number, supplier: Partial<InsertSupplier>): Promise<Supplier | undefined>;
   deleteSupplier(id: number): Promise<boolean>;
+  getSupplierProducts(supplierId: number): Promise<any[]>;
+  addProductToSupplier(supplierId: number, productId: number, supplierPrice?: number): Promise<SupplierProduct>;
+  removeProductFromSupplier(supplierId: number, productId: number): Promise<boolean>;
+  updateSupplierProduct(supplierId: number, productId: number, updates: Partial<InsertSupplierProduct>): Promise<SupplierProduct | undefined>;
 
   // Category methods
   getAllCategories(): Promise<Category[]>;
@@ -118,6 +122,72 @@ export class DatabaseStorage implements IStorage {
   async deleteSupplier(id: number): Promise<boolean> {
     const result = await db.delete(suppliers).where(eq(suppliers.id, id));
     return (result.rowCount || 0) > 0;
+  }
+
+  async getSupplierProducts(supplierId: number): Promise<any[]> {
+    const result = await db
+      .select({
+        id: supplierProducts.id,
+        supplierId: supplierProducts.supplierId,
+        productId: supplierProducts.productId,
+        supplierPrice: supplierProducts.supplierPrice,
+        isActive: supplierProducts.isActive,
+        productName: products.name,
+        productSku: products.sku,
+        productPrice: products.price,
+        productUnit: products.unit,
+        categoryName: categories.name,
+      })
+      .from(supplierProducts)
+      .leftJoin(products, eq(supplierProducts.productId, products.id))
+      .leftJoin(categories, eq(products.categoryId, categories.id))
+      .where(eq(supplierProducts.supplierId, supplierId));
+    
+    return result;
+  }
+
+  async addProductToSupplier(supplierId: number, productId: number, supplierPrice?: number): Promise<SupplierProduct> {
+    const [supplierProduct] = await db
+      .insert(supplierProducts)
+      .values({
+        supplierId,
+        productId,
+        supplierPrice: supplierPrice?.toString() || null,
+        isActive: true,
+      })
+      .returning();
+    return supplierProduct;
+  }
+
+  async removeProductFromSupplier(supplierId: number, productId: number): Promise<boolean> {
+    try {
+      await db
+        .delete(supplierProducts)
+        .where(
+          and(
+            eq(supplierProducts.supplierId, supplierId),
+            eq(supplierProducts.productId, productId)
+          )
+        );
+      return true;
+    } catch (error) {
+      console.error('Error removing product from supplier:', error);
+      return false;
+    }
+  }
+
+  async updateSupplierProduct(supplierId: number, productId: number, updates: Partial<InsertSupplierProduct>): Promise<SupplierProduct | undefined> {
+    const [updated] = await db
+      .update(supplierProducts)
+      .set(updates)
+      .where(
+        and(
+          eq(supplierProducts.supplierId, supplierId),
+          eq(supplierProducts.productId, productId)
+        )
+      )
+      .returning();
+    return updated || undefined;
   }
 
   // Category methods
