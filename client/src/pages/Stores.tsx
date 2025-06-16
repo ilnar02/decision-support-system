@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Store, MapPin, Search, Package, Truck, ShoppingCart, Edit, Plus, ArrowRight, TrendingUp } from 'lucide-react';
+import { Store, MapPin, Search, Package, Truck, ShoppingCart, Edit, Plus, ArrowRight, TrendingUp, BarChart, Calendar, Filter } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -47,6 +47,7 @@ const Stores = () => {
   const [selectedStore, setSelectedStore] = useState<StoreType | null>(null);
   const [showDeliveryModal, setShowDeliveryModal] = useState(false);
   const [showSaleModal, setShowSaleModal] = useState(false);
+  const [showSalesHistoryModal, setShowSalesHistoryModal] = useState(false);
   const [selectedCity, setSelectedCity] = useState('');
   const { toast } = useToast();
 
@@ -254,14 +255,14 @@ const Stores = () => {
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => {
                         console.log('Delivery button clicked for store:', store.name);
                         setSelectedStore(store);
                         setShowDeliveryModal(true);
                       }}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
                     >
                       <Truck size={16} />
                       Доставка
@@ -272,10 +273,20 @@ const Stores = () => {
                         setSelectedStore(store);
                         setShowSaleModal(true);
                       }}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
                     >
                       <ShoppingCart size={16} />
                       Продажа
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedStore(store);
+                        setShowSalesHistoryModal(true);
+                      }}
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <BarChart size={16} />
+                      История
                     </button>
                   </div>
                 </div>
@@ -367,6 +378,16 @@ const Stores = () => {
           storeInventory={storeInventory}
           products={products}
           isLoading={saleMutation.isPending}
+        />
+      )}
+
+      {/* Sales History Modal */}
+      {showSalesHistoryModal && selectedStore && (
+        <SalesHistoryModal
+          isOpen={showSalesHistoryModal}
+          onClose={() => setShowSalesHistoryModal(false)}
+          store={selectedStore}
+          products={products}
         />
       )}
     </div>
@@ -889,6 +910,273 @@ const SaleModal: React.FC<SaleModalProps> = ({
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+// Sales History Modal Component
+interface SalesHistoryModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  store: StoreType;
+  products: Product[];
+}
+
+const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
+  isOpen,
+  onClose,
+  store,
+  products
+}) => {
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState('');
+  const [viewMode, setViewMode] = useState<'history' | 'analytics'>('history');
+
+  // Get sales transactions for this store
+  const { data: allTransactions = [] } = useQuery({
+    queryKey: ['/api/transactions'],
+    queryFn: () => apiRequest('/api/transactions')
+  });
+
+  // Filter sales transactions for this store
+  const salesTransactions = allTransactions.filter((t: Transaction) => 
+    t.type === 'sale' && t.fromLocationId === store.id
+  );
+
+  // Apply date and product filters
+  const filteredTransactions = salesTransactions.filter((transaction: Transaction) => {
+    let matches = true;
+    
+    if (dateFrom) {
+      const transactionDate = new Date(transaction.createdAt || '').toISOString().split('T')[0];
+      matches = matches && transactionDate >= dateFrom;
+    }
+    
+    if (dateTo) {
+      const transactionDate = new Date(transaction.createdAt || '').toISOString().split('T')[0];
+      matches = matches && transactionDate <= dateTo;
+    }
+    
+    if (selectedProduct) {
+      // This would need transaction items to filter by product
+      // For now, we'll filter by notes containing product info
+      matches = matches && (transaction.notes?.includes(selectedProduct) || false);
+    }
+    
+    return matches;
+  });
+
+  // Calculate analytics
+  const analytics = {
+    totalSales: filteredTransactions.length,
+    totalRevenue: filteredTransactions.reduce((sum, t) => {
+      // Extract revenue from notes (simplified approach)
+      const revenueMatch = t.notes?.match(/₽([\d,]+\.?\d*)/);
+      return sum + (revenueMatch ? parseFloat(revenueMatch[1].replace(',', '')) : 0);
+    }, 0),
+    averageTransaction: 0,
+    topProducts: [] as any[]
+  };
+
+  analytics.averageTransaction = analytics.totalSales > 0 ? analytics.totalRevenue / analytics.totalSales : 0;
+
+  // Product sales statistics (simplified)
+  const productStats = products.map(product => {
+    const productSales = filteredTransactions.filter(t => 
+      t.notes?.includes(product.name) || false
+    );
+    return {
+      product: product.name,
+      sales: productSales.length,
+      revenue: productSales.reduce((sum, t) => {
+        const revenueMatch = t.notes?.match(/₽([\d,]+\.?\d*)/);
+        return sum + (revenueMatch ? parseFloat(revenueMatch[1].replace(',', '')) : 0);
+      }, 0)
+    };
+  }).filter(stat => stat.sales > 0).sort((a, b) => b.revenue - a.revenue);
+
+  analytics.topProducts = productStats.slice(0, 5);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+      <div className="bg-white rounded-lg p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto m-4">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">История продаж - {store.name}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+        </div>
+
+        {/* Mode Toggle */}
+        <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setViewMode('history')}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+              viewMode === 'history' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'
+            }`}
+          >
+            <Package size={16} />
+            История транзакций
+          </button>
+          <button
+            onClick={() => setViewMode('analytics')}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+              viewMode === 'analytics' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-600'
+            }`}
+          >
+            <BarChart size={16} />
+            Аналитика продаж
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Calendar size={16} className="inline mr-1" />
+              Дата от
+            </label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Calendar size={16} className="inline mr-1" />
+              Дата до
+            </label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Filter size={16} className="inline mr-1" />
+              Товар
+            </label>
+            <select
+              value={selectedProduct}
+              onChange={(e) => setSelectedProduct(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Все товары</option>
+              {products.map(product => (
+                <option key={product.id} value={product.name}>{product.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {viewMode === 'history' && (
+          <div>
+            <h3 className="text-lg font-medium mb-4">
+              Транзакции продаж ({filteredTransactions.length})
+            </h3>
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {filteredTransactions.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Package size={48} className="mx-auto mb-2 opacity-50" />
+                  Транзакции не найдены
+                </div>
+              ) : (
+                filteredTransactions.map((transaction: Transaction) => (
+                  <div key={transaction.id} className="border rounded-lg p-4 bg-white shadow-sm">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-medium text-green-600">
+                          Продажа #{transaction.id}
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">
+                          {new Date(transaction.createdAt || '').toLocaleString('ru-RU')}
+                        </div>
+                        <div className="text-sm text-gray-700 mt-2">
+                          {transaction.notes}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-green-600">
+                          {(() => {
+                            const revenueMatch = transaction.notes?.match(/₽([\d,]+\.?\d*)/);
+                            return revenueMatch ? `₽${revenueMatch[1]}` : '₽0.00';
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {viewMode === 'analytics' && (
+          <div>
+            <h3 className="text-lg font-medium mb-4">Аналитика продаж</h3>
+            
+            {/* Summary Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-blue-50 rounded-lg p-4">
+                <div className="text-blue-600 text-sm font-medium">Всего продаж</div>
+                <div className="text-2xl font-bold text-blue-700">{analytics.totalSales}</div>
+              </div>
+              <div className="bg-green-50 rounded-lg p-4">
+                <div className="text-green-600 text-sm font-medium">Общая выручка</div>
+                <div className="text-2xl font-bold text-green-700">₽{analytics.totalRevenue.toFixed(2)}</div>
+              </div>
+              <div className="bg-purple-50 rounded-lg p-4">
+                <div className="text-purple-600 text-sm font-medium">Средний чек</div>
+                <div className="text-2xl font-bold text-purple-700">₽{analytics.averageTransaction.toFixed(2)}</div>
+              </div>
+            </div>
+
+            {/* Top Products */}
+            <div className="bg-white border rounded-lg p-4">
+              <h4 className="font-medium mb-4">Топ товары по выручке</h4>
+              {analytics.topProducts.length === 0 ? (
+                <div className="text-center py-4 text-gray-500">
+                  Данные по товарам отсутствуют
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {analytics.topProducts.map((stat, index) => (
+                    <div key={stat.product} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <div className="font-medium">{stat.product}</div>
+                          <div className="text-sm text-gray-600">{stat.sales} продаж</div>
+                        </div>
+                      </div>
+                      <div className="font-bold text-green-600">
+                        ₽{stat.revenue.toFixed(2)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex justify-end mt-6">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+          >
+            Закрыть
+          </button>
+        </div>
       </div>
     </div>
   );
