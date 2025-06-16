@@ -10,14 +10,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { Supplier, Product, insertSupplierSchema } from '@shared/schema';
+import { Supplier, Product, Category, insertSupplierSchema } from '@shared/schema';
 
 // Form schemas
 const supplierSchema = insertSupplierSchema.extend({
   deliveryCities: z.array(z.string()).optional(),
   productCategories: z.array(z.string()).optional(),
-  minimumOrder: z.string().optional(),
-  rating: z.string().optional(),
+  minimumOrder: z.union([z.string(), z.number()]).optional(),
+  rating: z.union([z.string(), z.number()]).optional(),
 });
 
 type SupplierFormData = z.infer<typeof supplierSchema>;
@@ -45,6 +45,12 @@ const Suppliers = () => {
   const { data: products = [] } = useQuery({
     queryKey: ['/api/products'],
     queryFn: () => apiRequest('/api/products')
+  });
+
+  // Fetch categories for dropdown selection
+  const { data: categories = [] } = useQuery({
+    queryKey: ['/api/categories'],
+    queryFn: () => apiRequest('/api/categories')
   });
 
   // Fetch supplier products when viewing details
