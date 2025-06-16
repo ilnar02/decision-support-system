@@ -1,8 +1,8 @@
 import { 
-  users, suppliers, categories, products, warehouses, stores, inventory, transactions, transactionItems,
-  type User, type InsertUser, type Supplier, type InsertSupplier, type Category, type InsertCategory,
-  type Product, type InsertProduct, type Warehouse, type InsertWarehouse, type Store, type InsertStore,
-  type Inventory, type InsertInventory, type Transaction, type InsertTransaction,
+  users, suppliers, supplierProducts, categories, products, warehouses, stores, inventory, transactions, transactionItems,
+  type User, type InsertUser, type Supplier, type InsertSupplier, type SupplierProduct, type InsertSupplierProduct,
+  type Category, type InsertCategory, type Product, type InsertProduct, type Warehouse, type InsertWarehouse, 
+  type Store, type InsertStore, type Inventory, type InsertInventory, type Transaction, type InsertTransaction,
   type TransactionItem, type InsertTransactionItem
 } from "@shared/schema";
 import { db } from "./db";

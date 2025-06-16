@@ -109,6 +109,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/suppliers/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteSupplier(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Supplier not found" });
+      }
+      
+      res.json({ message: "Supplier deleted successfully" });
+    } catch (error) {
+      console.error("Delete supplier error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Supplier products routes
+  app.get("/api/suppliers/:id/products", async (req, res) => {
+    try {
+      const supplierId = parseInt(req.params.id);
+      const supplierProducts = await storage.getSupplierProducts(supplierId);
+      res.json(supplierProducts);
+    } catch (error) {
+      console.error("Get supplier products error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/suppliers/:id/products", async (req, res) => {
+    try {
+      const supplierId = parseInt(req.params.id);
+      const { productId, supplierPrice } = req.body;
+      
+      if (!productId || typeof productId !== 'number') {
+        return res.status(400).json({ message: "Product ID is required" });
+      }
+      
+      const supplierProduct = await storage.addProductToSupplier(
+        supplierId, 
+        productId, 
+        supplierPrice ? Number(supplierPrice) : undefined
+      );
+      
+      res.status(201).json(supplierProduct);
+    } catch (error) {
+      console.error("Add product to supplier error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/suppliers/:supplierId/products/:productId", async (req, res) => {
+    try {
+      const supplierId = parseInt(req.params.supplierId);
+      const productId = parseInt(req.params.productId);
+      
+      const success = await storage.removeProductFromSupplier(supplierId, productId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Supplier product not found" });
+      }
+      
+      res.json({ message: "Product removed from supplier successfully" });
+    } catch (error) {
+      console.error("Remove product from supplier error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.put("/api/suppliers/:supplierId/products/:productId", async (req, res) => {
+    try {
+      const supplierId = parseInt(req.params.supplierId);
+      const productId = parseInt(req.params.productId);
+      const updates = req.body;
+      
+      const supplierProduct = await storage.updateSupplierProduct(supplierId, productId, updates);
+      
+      if (!supplierProduct) {
+        return res.status(404).json({ message: "Supplier product not found" });
+      }
+      
+      res.json(supplierProduct);
+    } catch (error) {
+      console.error("Update supplier product error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Category routes
   app.get("/api/categories", async (req, res) => {
     try {
