@@ -17,7 +17,6 @@ const supplierSchema = insertSupplierSchema.extend({
   deliveryCities: z.array(z.string()).optional(),
   productCategories: z.array(z.string()).optional(),
   minimumOrder: z.union([z.string(), z.number()]).optional(),
-  rating: z.union([z.string(), z.number()]).optional(),
 });
 
 type SupplierFormData = z.infer<typeof supplierSchema>;

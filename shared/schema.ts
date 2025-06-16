@@ -30,7 +30,7 @@ export const suppliers = pgTable("suppliers", {
   deliveryTime: text("delivery_time"),
   deliveryCities: text("delivery_cities").array(),
   productCategories: text("product_categories").array(),
-  rating: decimal("rating", { precision: 2, scale: 1 }).default("0.0"),
+
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
