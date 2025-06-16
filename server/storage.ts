@@ -152,7 +152,6 @@ export class DatabaseStorage implements IStorage {
         supplierId,
         productId,
         supplierPrice: supplierPrice?.toString() || null,
-        isActive: true,
       })
       .returning();
     return supplierProduct;

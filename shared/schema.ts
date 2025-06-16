@@ -212,6 +212,9 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({
   id: true,
   createdAt: true,
+}).extend({
+  deliveryCities: z.array(z.string()).optional(),
+  productCategories: z.array(z.string()).optional(),
 });
 
 export const insertSupplierProductSchema = createInsertSchema(supplierProducts).omit({
