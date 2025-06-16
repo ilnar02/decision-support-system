@@ -40,7 +40,6 @@ export const supplierProducts = pgTable("supplier_products", {
   supplierId: integer("supplier_id").references(() => suppliers.id).notNull(),
   productId: integer("product_id").references(() => products.id).notNull(),
   supplierPrice: decimal("supplier_price", { precision: 10, scale: 2 }),
-  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
