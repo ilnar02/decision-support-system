@@ -18,11 +18,29 @@ export const users = pgTable("users", {
 export const suppliers = pgTable("suppliers", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  category: text("category").notNull(),
+  specialization: text("specialization").notNull(),
   email: text("email"),
   phone: text("phone"),
   address: text("address"),
+  representative: text("representative"),
+  representativePhone: text("representative_phone"),
+  representativeEmail: text("representative_email"),
+  minimumOrder: decimal("minimum_order", { precision: 10, scale: 2 }),
+  paymentTerms: text("payment_terms"),
+  deliveryTime: text("delivery_time"),
+  deliveryCities: text("delivery_cities").array(),
+  productCategories: text("product_categories").array(),
   rating: decimal("rating", { precision: 2, scale: 1 }).default("0.0"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const supplierProducts = pgTable("supplier_products", {
+  id: serial("id").primaryKey(),
+  supplierId: integer("supplier_id").references(() => suppliers.id).notNull(),
+  productId: integer("product_id").references(() => products.id).notNull(),
+  supplierPrice: decimal("supplier_price", { precision: 10, scale: 2 }),
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -108,6 +126,18 @@ export const usersRelations = relations(users, ({ many }) => ({
 
 export const suppliersRelations = relations(suppliers, ({ many }) => ({
   products: many(products),
+  supplierProducts: many(supplierProducts),
+}));
+
+export const supplierProductsRelations = relations(supplierProducts, ({ one }) => ({
+  supplier: one(suppliers, {
+    fields: [supplierProducts.supplierId],
+    references: [suppliers.id],
+  }),
+  product: one(products, {
+    fields: [supplierProducts.productId],
+    references: [products.id],
+  }),
 }));
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
@@ -184,6 +214,11 @@ export const insertSupplierSchema = createInsertSchema(suppliers).omit({
   createdAt: true,
 });
 
+export const insertSupplierProductSchema = createInsertSchema(supplierProducts).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertCategorySchema = createInsertSchema(categories).omit({
   id: true,
 });
@@ -221,6 +256,8 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type Supplier = typeof suppliers.$inferSelect;
+export type InsertSupplierProduct = z.infer<typeof insertSupplierProductSchema>;
+export type SupplierProduct = typeof supplierProducts.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Category = typeof categories.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
