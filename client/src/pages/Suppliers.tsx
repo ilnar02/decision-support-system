@@ -375,6 +375,15 @@ const Suppliers = () => {
                   </div>
                 )}
 
+                {selectedSupplier.notes && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Заметки</h4>
+                    <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+                      {selectedSupplier.notes}
+                    </div>
+                  </div>
+                )}
+
                 <button
                   onClick={() => setShowProductsModal(true)}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
@@ -903,10 +912,10 @@ const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({
                   onChange={(e) => setSelectedProductId(e.target.value ? Number(e.target.value) : null)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="">Выберите товар</option>
+                  <option value="">Выберите товар из списка ({availableProducts.length} доступно)</option>
                   {availableProducts.map(product => (
                     <option key={product.id} value={product.id}>
-                      {product.name} - ₽{Number(product.price).toFixed(2)}
+                      {product.name} | {product.sku} | ₽{Number(product.price).toFixed(2)} | {product.unit}
                     </option>
                   ))}
                 </select>
@@ -931,26 +940,7 @@ const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({
                 </button>
               </div>
 
-              <div className="max-h-64 overflow-y-auto">
-                <div className="text-sm font-medium text-gray-700 mb-2">
-                  Доступные товары ({availableProducts.length})
-                </div>
-                <div className="space-y-1">
-                  {availableProducts.slice(0, 10).map(product => (
-                    <div key={product.id} className="p-2 border rounded text-sm hover:bg-gray-50">
-                      <div className="font-medium">{product.name}</div>
-                      <div className="text-gray-600">
-                        {product.sku} | ₽{Number(product.price).toFixed(2)} | {product.unit}
-                      </div>
-                    </div>
-                  ))}
-                  {availableProducts.length > 10 && (
-                    <div className="text-xs text-gray-500 text-center p-2">
-                      И еще {availableProducts.length - 10} товаров...
-                    </div>
-                  )}
-                </div>
-              </div>
+
             </div>
           </div>
         </div>
