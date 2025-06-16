@@ -43,6 +43,7 @@ const Suppliers = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<SupplierWithStats | null>(null);
   const [showProductsModal, setShowProductsModal] = useState(false);
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
   const { toast } = useToast();
 
   // Fetch suppliers
@@ -61,6 +62,12 @@ const Suppliers = () => {
   const { data: categories = [] } = useQuery({
     queryKey: ['/api/categories'],
     queryFn: () => apiRequest('/api/categories')
+  });
+
+  // Fetch warehouses for delivery
+  const { data: warehouses = [] } = useQuery({
+    queryKey: ['/api/warehouses'],
+    queryFn: () => apiRequest('/api/warehouses')
   });
 
   // Fetch supplier products when viewing details
@@ -148,6 +155,24 @@ const Suppliers = () => {
     },
     onError: () => {
       toast({ title: 'Ошибка при удалении товара', variant: 'destructive' });
+    }
+  });
+
+  // Delivery mutation
+  const deliveryMutation = useMutation({
+    mutationFn: ({ deliveryData }: { deliveryData: any }) =>
+      apiRequest('/api/transactions', {
+        method: 'POST',
+        body: JSON.stringify(deliveryData)
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/warehouses'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
+      toast({ title: 'Поставка успешно выполнена' });
+      setShowDeliveryModal(false);
+    },
+    onError: () => {
+      toast({ title: 'Ошибка при выполнении поставки', variant: 'destructive' });
     }
   });
 
@@ -384,13 +409,23 @@ const Suppliers = () => {
                   </div>
                 )}
 
-                <button
-                  onClick={() => setShowProductsModal(true)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  <Package size={16} />
-                  Управление товарами
-                </button>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setShowProductsModal(true)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    <Package size={16} />
+                    Управление товарами
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowDeliveryModal(true)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                  >
+                    <Truck size={16} />
+                    Выполнить поставку
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
@@ -439,6 +474,198 @@ const Suppliers = () => {
         }}
         isLoading={addProductMutation.isPending || removeProductMutation.isPending}
       />
+
+      {/* Delivery Modal */}
+      <DeliveryModal
+        isOpen={showDeliveryModal}
+        onClose={() => setShowDeliveryModal(false)}
+        supplier={selectedSupplier}
+        products={products}
+        warehouses={warehouses}
+        supplierProducts={supplierProducts}
+        onSubmit={(deliveryData) => deliveryMutation.mutate({ deliveryData })}
+        isLoading={deliveryMutation.isPending}
+      />
+    </div>
+  );
+};
+
+// Delivery Modal Component
+interface DeliveryModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  supplier: SupplierWithStats | null;
+  products: Product[];
+  warehouses: Warehouse[];
+  supplierProducts: any[];
+  onSubmit: (data: any) => void;
+  isLoading?: boolean;
+}
+
+const DeliveryModal: React.FC<DeliveryModalProps> = ({
+  isOpen,
+  onClose,
+  supplier,
+  products,
+  warehouses,
+  supplierProducts,
+  onSubmit,
+  isLoading = false
+}) => {
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+  const [quantity, setQuantity] = useState('');
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState<number | null>(null);
+
+  if (!isOpen || !supplier) return null;
+
+  // Filter warehouses based on supplier delivery cities
+  const availableWarehouses = warehouses.filter((warehouse: any) => 
+    supplier.deliveryCities && supplier.deliveryCities.includes(warehouse.city)
+  );
+
+  // Get supplier products for delivery
+  const availableProducts = supplierProducts.map(sp => {
+    const product = products.find(p => p.id === sp.productId);
+    return product ? { ...product, supplierPrice: sp.supplierPrice } : null;
+  }).filter(Boolean);
+
+  const handleSubmit = () => {
+    if (!selectedProductId || !quantity || !selectedWarehouseId) {
+      return;
+    }
+
+    const deliveryData = {
+      type: 'delivery',
+      fromLocationId: null,
+      fromLocationType: null,
+      toLocationId: selectedWarehouseId,
+      toLocationType: 'warehouse',
+      items: [{
+        productId: selectedProductId,
+        quantity: Number(quantity),
+        price: availableProducts.find(p => p.id === selectedProductId)?.supplierPrice || 0
+      }]
+    };
+
+    onSubmit(deliveryData);
+    
+    // Reset form
+    setSelectedProductId(null);
+    setQuantity('');
+    setSelectedWarehouseId(null);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">Выполнить поставку - {supplier.name}</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="space-y-6">
+          {/* Product Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Товар для поставки
+            </label>
+            <select
+              value={selectedProductId || ''}
+              onChange={(e) => setSelectedProductId(e.target.value ? Number(e.target.value) : null)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Выберите товар ({availableProducts.length} доступно)</option>
+              {availableProducts.map(product => (
+                <option key={product.id} value={product.id}>
+                  {product.name} | {product.sku} | ₽{Number(product.supplierPrice || product.price).toFixed(2)} | {product.unit}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Quantity */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Количество
+            </label>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Введите количество"
+            />
+          </div>
+
+          {/* Warehouse Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Склад назначения
+            </label>
+            {availableWarehouses.length === 0 ? (
+              <div className="text-red-600 text-sm p-3 bg-red-50 rounded">
+                Нет доступных складов в городах доставки поставщика
+                {supplier.deliveryCities?.length > 0 && (
+                  <div className="mt-1">
+                    Города доставки: {supplier.deliveryCities.join(', ')}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <select
+                value={selectedWarehouseId || ''}
+                onChange={(e) => setSelectedWarehouseId(e.target.value ? Number(e.target.value) : null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Выберите склад ({availableWarehouses.length} доступно)</option>
+                {availableWarehouses.map(warehouse => (
+                  <option key={warehouse.id} value={warehouse.id}>
+                    {warehouse.name} - {warehouse.city}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Delivery Summary */}
+          {selectedProductId && quantity && selectedWarehouseId && (
+            <div className="bg-blue-50 p-4 rounded">
+              <h4 className="font-medium text-blue-900 mb-2">Сводка поставки</h4>
+              <div className="text-sm text-blue-800 space-y-1">
+                <div>Товар: {availableProducts.find(p => p.id === selectedProductId)?.name}</div>
+                <div>Количество: {quantity} {availableProducts.find(p => p.id === selectedProductId)?.unit}</div>
+                <div>Склад: {availableWarehouses.find(w => w.id === selectedWarehouseId)?.name}</div>
+                <div>Общая стоимость: ₽{(Number(quantity) * Number(availableProducts.find(p => p.id === selectedProductId)?.supplierPrice || availableProducts.find(p => p.id === selectedProductId)?.price || 0)).toFixed(2)}</div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-3 pt-6 border-t mt-6">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+          >
+            Отмена
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!selectedProductId || !quantity || !selectedWarehouseId || isLoading || availableWarehouses.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+            <Truck size={16} />
+            Выполнить поставку
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
