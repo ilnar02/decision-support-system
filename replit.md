@@ -107,6 +107,11 @@ Changelog:
 - June 16, 2025. Implemented autocomplete product filtering for better UX with large product catalogs
 - June 16, 2025. Added transaction detail view functionality to show individual receipt contents
 - June 16, 2025. Fixed sales amount calculation by adding price field to transaction items schema
+- June 16, 2025. Completed comprehensive supplier management system with enhanced database schema
+- June 16, 2025. Added category dropdown with checklist functionality using categories table
+- June 16, 2025. Implemented supplier-product relationship management with full CRUD operations
+- June 16, 2025. Enhanced UI layout with bigger detailed information section and moved edit/delete buttons
+- June 16, 2025. Removed rating field completely and fixed form data loading for supplier editing
 ```
 
 ## User Preferences
