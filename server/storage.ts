@@ -131,7 +131,6 @@ export class DatabaseStorage implements IStorage {
         supplierId: supplierProducts.supplierId,
         productId: supplierProducts.productId,
         supplierPrice: supplierProducts.supplierPrice,
-        isActive: supplierProducts.isActive,
         productName: products.name,
         productSku: products.sku,
         productPrice: products.price,

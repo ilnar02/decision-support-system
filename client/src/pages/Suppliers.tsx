@@ -201,9 +201,8 @@ const Suppliers = () => {
                       <div>
                         <h3 className="font-medium text-gray-900">{supplier.name}</h3>
                         <p className="text-sm text-gray-600">{supplier.specialization}</p>
-                        <div className="flex items-center gap-1 mt-1">
-                          <Star className="text-yellow-400" size={14} />
-                          <span className="text-sm text-gray-600">{supplier.rating || '0.0'}</span>
+                        <div className="mt-1">
+                          <span className="text-sm text-gray-500">{supplier.deliveryTime || 'Время доставки не указано'}</span>
                         </div>
                       </div>
                     </div>
@@ -286,7 +285,7 @@ const Suppliers = () => {
                   <div className="space-y-2 text-sm">
                     <div><span className="text-gray-600">Название:</span> {selectedSupplier.name}</div>
                     <div><span className="text-gray-600">Специализация:</span> {selectedSupplier.specialization}</div>
-                    <div><span className="text-gray-600">Рейтинг:</span> {selectedSupplier.rating || '0.0'}</div>
+
                   </div>
                 </div>
 
@@ -448,7 +447,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
       deliveryTime: supplier?.deliveryTime || '',
       deliveryCities: supplier?.deliveryCities || [],
       productCategories: supplier?.productCategories || [],
-      rating: supplier?.rating ? supplier.rating.toString() : '0.0',
+
       notes: supplier?.notes || '',
     }
   });
@@ -464,7 +463,6 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
     const submitData = {
       ...data,
       minimumOrder: data.minimumOrder ? Number(data.minimumOrder) : undefined,
-      rating: data.rating ? Number(data.rating) : undefined,
       deliveryCities: deliveryCitiesText.split(',').map(s => s.trim()).filter(Boolean),
       productCategories: selectedCategories,
     };
