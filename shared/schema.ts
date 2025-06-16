@@ -25,7 +25,7 @@ export const suppliers = pgTable("suppliers", {
   representative: text("representative"),
   representativePhone: text("representative_phone"),
   representativeEmail: text("representative_email"),
-  minimumOrder: decimal("minimum_order", { precision: 10, scale: 2 }),
+  minimumOrder: integer("minimum_order"),
   paymentTerms: text("payment_terms"),
   deliveryTime: text("delivery_time"),
   deliveryCities: text("delivery_cities").array(),
