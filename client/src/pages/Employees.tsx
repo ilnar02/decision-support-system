@@ -280,7 +280,7 @@ const Employees = () => {
         <UserModal
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
-          onSubmit={(data) => createUserMutation.mutate(data)}
+          onSubmit={(data) => createUserMutation.mutate(data as UserFormData)}
           title="Добавить сотрудника"
           stores={stores}
           warehouses={warehouses}
@@ -340,9 +340,9 @@ const UserModal: React.FC<UserModalProps> = ({
       password: '',
       name: initialData?.name || '',
       email: initialData?.email || '',
-      role: initialData?.role || 'cashier',
+      role: (initialData?.role as 'admin' | 'manager' | 'storekeeper' | 'cashier') || 'cashier',
       locationId: initialData?.locationId || undefined,
-      locationType: initialData?.locationType || undefined,
+      locationType: (initialData?.locationType as 'warehouse' | 'store' | undefined) || undefined,
     },
   });
 
