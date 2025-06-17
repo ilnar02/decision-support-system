@@ -242,6 +242,7 @@ export const insertInventorySchema = createInsertSchema(inventory).omit({
 export const insertTransactionSchema = createInsertSchema(transactions).omit({
   id: true,
   createdAt: true,
+  deliveredAt: true,
 });
 
 export const insertTransactionItemSchema = createInsertSchema(transactionItems).omit({

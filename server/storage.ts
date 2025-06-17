@@ -61,6 +61,8 @@ export interface IStorage {
   getAllTransactionsWithItems(): Promise<any[]>;
   getTransaction(id: number): Promise<Transaction | undefined>;
   createTransaction(transaction: InsertTransaction, items: InsertTransactionItem[]): Promise<Transaction>;
+  updateTransactionStatus(id: number, status: 'in_transit' | 'delivered'): Promise<Transaction | undefined>;
+  getInTransitTransactions(): Promise<any[]>;
   
   // Analytics methods
   getDashboardAnalytics(): Promise<any>;
