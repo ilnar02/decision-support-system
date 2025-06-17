@@ -293,9 +293,10 @@ const Stores = () => {
                       История
                     </button>
                   </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Selected Store Details */}

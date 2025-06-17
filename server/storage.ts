@@ -472,11 +472,10 @@ export class DatabaseStorage implements IStorage {
     return await db.transaction(async (tx) => {
       // Determine status based on transaction type
       let status = 'delivered';
-      if (insertTransaction.type === 'transfer') {
+      if (insertTransaction.type === 'transfer' || insertTransaction.type === 'delivery') {
         status = 'in_transit';
       }
-      // Deliveries from suppliers (no fromLocationId) are immediate
-      // Deliveries between locations should be in_transit
+      // Only sales are immediate, all other movements require confirmation
 
       const [transaction] = await tx
         .insert(transactions)
