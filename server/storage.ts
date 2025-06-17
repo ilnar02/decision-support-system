@@ -602,7 +602,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDashboardAnalytics(): Promise<any> {
-    return await this.db.transaction(async (tx) => {
+    return await db.transaction(async (tx) => {
       // Get total products count
       const totalProductsResult = await tx
         .select({ count: sql<number>`count(*)` })
@@ -645,20 +645,20 @@ export class DatabaseStorage implements IStorage {
         const productInventory = allInventory.filter(inv => inv.productId === product.id);
         
         // Calculate required stock: minimum stock × number of stores served by warehouses with this product
-        const warehousesWithProduct = [...new Set(
+        const warehousesWithProduct = Array.from(new Set(
           productInventory
-            .filter(inv => inv.locationType === 'warehouse')
-            .map(inv => inv.locationId)
-        )];
+            .filter((inv: any) => inv.locationType === 'warehouse')
+            .map((inv: any) => inv.locationId)
+        ));
         
-        const storesServedByWarehouses = allStores.filter(store => 
+        const storesServedByWarehouses = allStores.filter((store: any) => 
           warehousesWithProduct.includes(store.warehouseId)
         );
         
-        const requiredStock = product.minStock * Math.max(1, storesServedByWarehouses.length);
+        const requiredStock = (product.minStock || 0) * Math.max(1, storesServedByWarehouses.length);
         
         // Calculate total current stock
-        const totalStock = productInventory.reduce((sum, inv) => sum + inv.quantity, 0);
+        const totalStock = productInventory.reduce((sum: number, inv: any) => sum + inv.quantity, 0);
         
         if (totalStock === 0) {
           outOfStockCount++;
@@ -681,17 +681,12 @@ export class DatabaseStorage implements IStorage {
         })
         .from(transactions)
         .leftJoin(transactionItems, eq(transactions.id, transactionItems.transactionId))
-        .where(
-          and(
-            eq(transactions.type, 'sale'),
-            gte(transactions.createdAt, sixMonthsAgo)
-          )
-        )
+        .where(eq(transactions.type, 'sale'))
         .groupBy(transactions.id, transactions.type, transactions.createdAt);
 
       // Group sales by month
-      const salesByMonth = salesTransactions.reduce((acc, sale) => {
-        const month = new Date(sale.createdAt).toISOString().slice(0, 7); // YYYY-MM format
+      const salesByMonth = salesTransactions.reduce((acc: any, sale: any) => {
+        const month = new Date(sale.createdAt || new Date()).toISOString().slice(0, 7); // YYYY-MM format
         if (!acc[month]) {
           acc[month] = { revenue: 0, quantity: 0 };
         }

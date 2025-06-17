@@ -227,7 +227,7 @@ const Dashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentTransactions.map((transaction) => (
+                  {recentTransactions.map((transaction: any) => (
                     <tr key={transaction.id}>
                       <td>{transaction.id}</td>
                       <td>
