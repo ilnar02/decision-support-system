@@ -98,7 +98,8 @@ export const inventory = pgTable("inventory", {
 
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
-  type: text("type").notNull(), // incoming, outgoing, transfer
+  type: text("type").notNull(), // incoming, outgoing, transfer, sale, delivery
+  status: text("status").notNull().default('delivered'), // 'in_transit', 'delivered'
   fromLocationId: integer("from_location_id"),
   fromLocationType: text("from_location_type"),
   toLocationId: integer("to_location_id"),
@@ -106,6 +107,7 @@ export const transactions = pgTable("transactions", {
   notes: text("notes"),
   userId: integer("user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
+  deliveredAt: timestamp("delivered_at"),
 });
 
 export const transactionItems = pgTable("transaction_items", {
