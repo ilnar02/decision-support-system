@@ -312,7 +312,7 @@ const Employees = () => {
 interface UserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: UserFormData | UpdateUserFormData) => void;
+  onSubmit: (data: any) => void;
   title: string;
   initialData?: User;
   stores: Store[];
