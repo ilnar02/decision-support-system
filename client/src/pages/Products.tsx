@@ -66,6 +66,8 @@ const Products = () => {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/dashboard'] });
       setIsAddModalOpen(false);
       toast({ title: 'Товар добавлен успешно' });
     },
@@ -83,6 +85,8 @@ const Products = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/dashboard'] });
       setIsEditModalOpen(false);
       setEditingProduct(null);
       toast({ title: 'Товар обновлен успешно' });
