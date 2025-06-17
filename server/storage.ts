@@ -61,6 +61,9 @@ export interface IStorage {
   getAllTransactionsWithItems(): Promise<any[]>;
   getTransaction(id: number): Promise<Transaction | undefined>;
   createTransaction(transaction: InsertTransaction, items: InsertTransactionItem[]): Promise<Transaction>;
+  
+  // Analytics methods
+  getDashboardAnalytics(): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -595,6 +598,131 @@ export class DatabaseStorage implements IStorage {
       }
 
       return transaction;
+    });
+  }
+
+  async getDashboardAnalytics(): Promise<any> {
+    return await this.db.transaction(async (tx) => {
+      // Get total products count
+      const totalProductsResult = await tx
+        .select({ count: sql<number>`count(*)` })
+        .from(products);
+      const totalProducts = totalProductsResult[0]?.count || 0;
+
+      // Get all products with their minimum stock and current stock
+      const productsWithStock = await tx
+        .select({
+          id: products.id,
+          name: products.name,
+          minStock: products.minStock,
+          sku: products.sku,
+        })
+        .from(products);
+
+      // Get all inventory data
+      const allInventory = await tx
+        .select({
+          productId: inventory.productId,
+          locationId: inventory.locationId,
+          locationType: inventory.locationType,
+          quantity: inventory.quantity,
+        })
+        .from(inventory);
+
+      // Get all stores with their warehouse assignments
+      const allStores = await tx
+        .select({
+          id: stores.id,
+          warehouseId: stores.warehouseId,
+        })
+        .from(stores);
+
+      // Calculate stock status for each product
+      let lowStockCount = 0;
+      let outOfStockCount = 0;
+
+      for (const product of productsWithStock) {
+        const productInventory = allInventory.filter(inv => inv.productId === product.id);
+        
+        // Calculate required stock: minimum stock × number of stores served by warehouses with this product
+        const warehousesWithProduct = [...new Set(
+          productInventory
+            .filter(inv => inv.locationType === 'warehouse')
+            .map(inv => inv.locationId)
+        )];
+        
+        const storesServedByWarehouses = allStores.filter(store => 
+          warehousesWithProduct.includes(store.warehouseId)
+        );
+        
+        const requiredStock = product.minStock * Math.max(1, storesServedByWarehouses.length);
+        
+        // Calculate total current stock
+        const totalStock = productInventory.reduce((sum, inv) => sum + inv.quantity, 0);
+        
+        if (totalStock === 0) {
+          outOfStockCount++;
+        } else if (totalStock < requiredStock) {
+          lowStockCount++;
+        }
+      }
+
+      // Get sales data for last 6 months
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+      const salesTransactions = await tx
+        .select({
+          id: transactions.id,
+          type: transactions.type,
+          createdAt: transactions.createdAt,
+          totalAmount: sql<number>`COALESCE(SUM(ti.quantity * ti.price), 0)`,
+          totalQuantity: sql<number>`COALESCE(SUM(ti.quantity), 0)`,
+        })
+        .from(transactions)
+        .leftJoin(transactionItems, eq(transactions.id, transactionItems.transactionId))
+        .where(
+          and(
+            eq(transactions.type, 'sale'),
+            gte(transactions.createdAt, sixMonthsAgo)
+          )
+        )
+        .groupBy(transactions.id, transactions.type, transactions.createdAt);
+
+      // Group sales by month
+      const salesByMonth = salesTransactions.reduce((acc, sale) => {
+        const month = new Date(sale.createdAt).toISOString().slice(0, 7); // YYYY-MM format
+        if (!acc[month]) {
+          acc[month] = { revenue: 0, quantity: 0 };
+        }
+        acc[month].revenue += Number(sale.totalAmount) || 0;
+        acc[month].quantity += Number(sale.totalQuantity) || 0;
+        return acc;
+      }, {} as Record<string, { revenue: number; quantity: number }>);
+
+      // Generate last 6 months data
+      const salesData = [];
+      const monthNames = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+      
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        const monthKey = date.toISOString().slice(0, 7);
+        const monthData = salesByMonth[monthKey] || { revenue: 0, quantity: 0 };
+        
+        salesData.push({
+          month: monthNames[date.getMonth()],
+          revenue: monthData.revenue,
+          quantity: monthData.quantity,
+        });
+      }
+
+      return {
+        totalProducts,
+        lowStockCount,
+        outOfStockCount,
+        salesData,
+      };
     });
   }
 }
