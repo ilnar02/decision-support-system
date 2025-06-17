@@ -7,7 +7,7 @@ import Warehouses from './pages/Warehouses';
 import Stores from './pages/Stores';
 import Suppliers from './pages/Suppliers';
 import Transactions from './pages/Transactions';
-import Reports from './pages/Reports';
+
 import Employees from './pages/Employees';
 import Login from './pages/Login';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -63,13 +63,7 @@ const AppContent = () => {
           </Layout>
         </ProtectedRoute>
       </Route>
-      <Route path="/reports">
-        <ProtectedRoute>
-          <Layout>
-            <Reports />
-          </Layout>
-        </ProtectedRoute>
-      </Route>
+
       <Route path="/employees">
         <ProtectedRoute>
           <Layout>
