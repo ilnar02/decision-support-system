@@ -45,15 +45,18 @@ const Dashboard = () => {
     );
   }
 
-  const recentTransactions = transactions.slice(0, 5).map((transaction: any) => ({
-    id: `T-${transaction.id}`,
-    type: transaction.type === 'sale' ? 'Продажа' : 
-          transaction.type === 'incoming' ? 'Поступление' : 
-          transaction.type === 'delivery' ? 'Доставка' : 'Перемещение',
-    location: transaction.notes || 'Транзакция',
-    amount: 0, // Will be calculated from transaction items
-    date: new Date(transaction.createdAt).toLocaleDateString('ru-RU')
-  }));
+  const recentTransactions = transactions
+    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5)
+    .map((transaction: any) => ({
+      id: `T-${transaction.id}`,
+      type: transaction.type === 'sale' ? 'Продажа' : 
+            transaction.type === 'incoming' ? 'Поступление' : 
+            transaction.type === 'delivery' ? 'Доставка' : 'Перемещение',
+      location: transaction.notes || 'Транзакция',
+      amount: 0, // Will be calculated from transaction items
+      date: new Date(transaction.createdAt).toLocaleDateString('ru-RU')
+    }));
 
   return (
     <div className="dashboard fade-in">
@@ -207,7 +210,6 @@ const Dashboard = () => {
         <div className="card recent-transactions">
           <div className="card-header">
             <h2 className="card-title">Недавние транзакции</h2>
-            <a href="/transactions" className="btn btn-sm btn-secondary">Показать все</a>
           </div>
           <div className="table-container">
             {transactionsLoading ? (
@@ -252,45 +254,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="card stock-status">
-          <div className="card-header">
-            <h2 className="card-title">Состояние запасов</h2>
-            <a href="/products" className="btn btn-sm btn-secondary">Управление товарами</a>
-          </div>
-          <div className="stock-overview">
-            <div className="stock-chart">
-              <div className="stock-segment good" style={{ 
-                width: `${analytics ? ((analytics.totalProducts - analytics.lowStockCount - analytics.outOfStockCount) / analytics.totalProducts) * 100 : 0}%` 
-              }}>
-                <span className="stock-label">В норме</span>
-              </div>
-              <div className="stock-segment warning" style={{ 
-                width: `${analytics ? (analytics.lowStockCount / analytics.totalProducts) * 100 : 0}%` 
-              }}>
-                <span className="stock-label">Мало</span>
-              </div>
-              <div className="stock-segment danger" style={{ 
-                width: `${analytics ? (analytics.outOfStockCount / analytics.totalProducts) * 100 : 0}%` 
-              }}>
-                <span className="stock-label">Нет</span>
-              </div>
-            </div>
-            <div className="stock-legend">
-              <div className="legend-item">
-                <div className="legend-color good"></div>
-                <span>Достаточно запасов ({(analytics?.totalProducts || 0) - (analytics?.lowStockCount || 0) - (analytics?.outOfStockCount || 0)})</span>
-              </div>
-              <div className="legend-item">
-                <div className="legend-color warning"></div>
-                <span>Требуют пополнения ({analytics?.lowStockCount || 0})</span>
-              </div>
-              <div className="legend-item">
-                <div className="legend-color danger"></div>
-                <span>Нет в наличии ({analytics?.outOfStockCount || 0})</span>
-              </div>
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
   );

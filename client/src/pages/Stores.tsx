@@ -197,6 +197,23 @@ const Stores = () => {
     }
   });
 
+  // Create store mutation
+  const createStoreMutation = useMutation({
+    mutationFn: (data: StoreFormData) => 
+      apiRequest('/api/stores', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/stores'] });
+      setIsAddStoreModalOpen(false);
+      toast({ title: 'Магазин создан успешно' });
+    },
+    onError: () => {
+      toast({ title: 'Ошибка при создании магазина', variant: 'destructive' });
+    }
+  });
+
   // Enhanced stores with stats
   const storesWithStats = stores.map((store: StoreType) => {
     const storeInventoryItems = inventory.filter(
@@ -1405,6 +1422,155 @@ const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+};
+
+// Add Store Modal Component
+interface AddStoreModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: StoreFormData) => void;
+  warehouses: Warehouse[];
+  isLoading?: boolean;
+}
+
+const AddStoreModal: React.FC<AddStoreModalProps> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  warehouses,
+  isLoading = false
+}) => {
+  const form = useForm<StoreFormData>({
+    resolver: zodResolver(storeSchema),
+    defaultValues: {
+      name: '',
+      region: '',
+      address: '',
+      type: '',
+      managerId: undefined,
+      warehouseId: undefined
+    }
+  });
+
+  const handleSubmit = (data: StoreFormData) => {
+    onSubmit(data);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">Добавить новый магазин</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+        </div>
+
+        <form onSubmit={form.handleSubmit(handleSubmit)}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Название магазина *
+              </label>
+              <input
+                {...form.register('name')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Введите название магазина"
+              />
+              {form.formState.errors.name && (
+                <p className="mt-1 text-sm text-red-600">{form.formState.errors.name.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Регион *
+              </label>
+              <input
+                {...form.register('region')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Москва, Санкт-Петербург, Казань"
+              />
+              {form.formState.errors.region && (
+                <p className="mt-1 text-sm text-red-600">{form.formState.errors.region.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Адрес *
+            </label>
+            <input
+              {...form.register('address')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Введите полный адрес магазина"
+            />
+            {form.formState.errors.address && (
+              <p className="mt-1 text-sm text-red-600">{form.formState.errors.address.message}</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Тип магазина *
+              </label>
+              <select
+                {...form.register('type')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Выберите тип</option>
+                <option value="Флагман">Флагман</option>
+                <option value="Стандарт">Стандарт</option>
+                <option value="Премиум">Премиум</option>
+              </select>
+              {form.formState.errors.type && (
+                <p className="mt-1 text-sm text-red-600">{form.formState.errors.type.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Назначенный склад
+              </label>
+              <select
+                {...form.register('warehouseId', { 
+                  setValueAs: (value) => value === '' ? undefined : parseInt(value)
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Выберите склад (опционально)</option>
+                {warehouses.map((warehouse) => (
+                  <option key={warehouse.id} value={warehouse.id}>
+                    {warehouse.name} - {warehouse.city}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+              Создать магазин
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

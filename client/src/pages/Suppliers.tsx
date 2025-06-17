@@ -169,6 +169,9 @@ const Suppliers: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
       queryClient.invalidateQueries({ queryKey: ['/api/suppliers', selectedSupplier?.id, 'products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      // Force refetch to ensure immediate UI update
+      queryClient.refetchQueries({ queryKey: ['/api/suppliers', selectedSupplier?.id, 'products'] });
       toast({ title: 'Товар добавлен к поставщику' });
     },
     onError: () => {
@@ -185,6 +188,9 @@ const Suppliers: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
       queryClient.invalidateQueries({ queryKey: ['/api/suppliers', selectedSupplier?.id, 'products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      // Force refetch to ensure immediate UI update
+      queryClient.refetchQueries({ queryKey: ['/api/suppliers', selectedSupplier?.id, 'products'] });
       toast({ title: 'Товар удален у поставщика' });
     },
     onError: () => {
