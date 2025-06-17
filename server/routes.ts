@@ -429,6 +429,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Analytics endpoint
+  app.get("/api/analytics/dashboard", async (req, res) => {
+    try {
+      const analytics = await storage.getDashboardAnalytics();
+      res.json(analytics);
+    } catch (error) {
+      console.error("Get dashboard analytics error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Seed database route (for development)
   app.post("/api/seed", async (req, res) => {
     try {
