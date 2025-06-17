@@ -82,6 +82,11 @@ const Warehouses = () => {
     queryFn: () => apiRequest('/api/transactions'),
   });
 
+  const { data: inTransitTransactions = [] } = useQuery({
+    queryKey: ['/api/transactions/in-transit'],
+    queryFn: () => apiRequest('/api/transactions/in-transit'),
+  });
+
   // Mutations
   const createWarehouseMutation = useMutation({
     mutationFn: (data: WarehouseFormData) => 
@@ -116,12 +121,28 @@ const Warehouses = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions/in-transit'] });
       setIsTransferModalOpen(false);
       toast({ title: 'Перемещение выполнено успешно' });
     },
     onError: () => {
       toast({ title: 'Ошибка при перемещении товара', variant: 'destructive' });
     }
+  });
+
+  const confirmDeliveryMutation = useMutation({
+    mutationFn: (transactionId: number) => 
+      apiRequest(`/api/transactions/${transactionId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'delivered' }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions/in-transit'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      toast({ title: 'Поставка подтверждена' });
+    },
   });
 
   // Filter warehouses
@@ -340,16 +361,22 @@ const Warehouses = () => {
               </div>
 
               {/* Incoming Deliveries */}
-              {inTransitTransactions.length > 0 && (
+              {inTransitTransactions.filter((t: any) => 
+                t.toLocationId === selectedWarehouseData.id && t.toLocationType === 'warehouse'
+              ).length > 0 && (
                 <div className="bg-yellow-50 rounded-lg shadow-sm border border-yellow-200">
                   <div className="p-4 border-b border-yellow-200 bg-yellow-100">
                     <h3 className="font-medium text-yellow-800 flex items-center gap-2">
                       <Truck size={20} className="text-yellow-600" />
-                      Ожидающие подтверждения поставки ({inTransitTransactions.length})
+                      Ожидающие подтверждения поставки ({inTransitTransactions.filter((t: any) => 
+                        t.toLocationId === selectedWarehouseData.id && t.toLocationType === 'warehouse'
+                      ).length})
                     </h3>
                   </div>
                   <div className="p-4 space-y-3">
-                    {inTransitTransactions.map((transaction: any) => (
+                    {inTransitTransactions.filter((t: any) => 
+                      t.toLocationId === selectedWarehouseData.id && t.toLocationType === 'warehouse'
+                    ).map((transaction: any) => (
                       <div key={transaction.id} className="bg-white rounded-lg border p-4">
                         <div className="flex justify-between items-start mb-3">
                           <div>
@@ -368,11 +395,11 @@ const Warehouses = () => {
                             </div>
                           </div>
                           <button
-                            onClick={() => onConfirmDelivery(transaction.id)}
-                            disabled={isConfirming}
+                            onClick={() => confirmDeliveryMutation.mutate(transaction.id)}
+                            disabled={confirmDeliveryMutation.isPending}
                             className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50"
                           >
-                            {isConfirming ? 'Подтверждение...' : 'Подтвердить'}
+                            {confirmDeliveryMutation.isPending ? 'Подтверждение...' : 'Подтвердить'}
                           </button>
                         </div>
                         <div className="border-t pt-3">
