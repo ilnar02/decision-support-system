@@ -607,7 +607,7 @@ export class DatabaseStorage implements IStorage {
       const totalProductsResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(products);
-      const totalProducts = totalProductsResult[0]?.count || 0;
+      const totalProducts = Number(totalProductsResult[0]?.count) || 0;
 
       // Get all products with their minimum stock
       const productsWithStock = await db
@@ -632,42 +632,57 @@ export class DatabaseStorage implements IStorage {
 
       for (const product of productsWithStock) {
         const productInventory = allInventory.filter(inv => inv.productId === product.id);
-        
-        // Calculate required stock: minimum stock × number of stores served by warehouses with this product
-        const warehousesWithProduct = Array.from(new Set(
-          productInventory
-            .filter((inv: any) => inv.locationType === 'warehouse')
-            .map((inv: any) => inv.locationId)
-        ));
-        
-        const storesServedByWarehouses = allStores.filter((store: any) => 
-          warehousesWithProduct.includes(store.warehouseId)
-        );
-        
-        const requiredStock = (product.minStock || 0) * Math.max(1, storesServedByWarehouses.length);
-        
-        // Calculate total current stock
-        const totalStock = productInventory.reduce((sum: number, inv: any) => sum + inv.quantity, 0);
+        const totalStock = productInventory.reduce((sum, inv) => sum + inv.quantity, 0);
+        const minStock = product.minStock || 10;
         
         if (totalStock === 0) {
           outOfStockCount++;
-        } else if (totalStock < requiredStock) {
+        } else if (totalStock < minStock) {
           lowStockCount++;
         }
       }
 
-      // Generate sales data for 6 months (using real sales transactions)
+      // Get real sales data from transactions
+      const salesTransactions = await db
+        .select({
+          id: transactions.id,
+          createdAt: transactions.createdAt,
+        })
+        .from(transactions)
+        .where(eq(transactions.type, 'sale'));
+
+      // Calculate sales totals
+      let totalRevenue = 0;
+      let totalQuantity = 0;
+
+      for (const transaction of salesTransactions) {
+        const items = await db
+          .select({
+            quantity: transactionItems.quantity,
+            price: transactionItems.price,
+          })
+          .from(transactionItems)
+          .where(eq(transactionItems.transactionId, transaction.id));
+        
+        for (const item of items) {
+          totalRevenue += item.quantity * (Number(item.price) || 0);
+          totalQuantity += item.quantity;
+        }
+      }
+
+      // Generate sales data for 6 months
       const salesData = [];
       const monthNames = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
       
       for (let i = 5; i >= 0; i--) {
         const date = new Date();
         date.setMonth(date.getMonth() - i);
+        const isCurrentMonth = i === 0;
         
         salesData.push({
           month: monthNames[date.getMonth()],
-          revenue: 0, // No sales data yet in database
-          quantity: 0,
+          revenue: isCurrentMonth ? totalRevenue : 0,
+          quantity: isCurrentMonth ? totalQuantity : 0,
         });
       }
 
