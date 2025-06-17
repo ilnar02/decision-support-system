@@ -113,6 +113,26 @@ const Stores = () => {
     }
   });
 
+  const { data: inTransitTransactions = [] } = useQuery({
+    queryKey: ['/api/transactions/in-transit'],
+    queryFn: () => apiRequest('/api/transactions/in-transit'),
+  });
+
+  const confirmDeliveryMutation = useMutation({
+    mutationFn: (transactionId: number) => 
+      apiRequest(`/api/transactions/${transactionId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'delivered' }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions/in-transit'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      toast({ title: 'Поставка подтверждена' });
+    },
+  });
+
   // Sale mutation
   const saleMutation = useMutation({
     mutationFn: (data: SaleFormData) => 
