@@ -31,8 +31,18 @@ const saleSchema = z.object({
   })).min(1),
 });
 
+const storeSchema = z.object({
+  name: z.string().min(1, 'Название магазина обязательно'),
+  region: z.string().min(1, 'Регион обязателен'),
+  address: z.string().min(1, 'Адрес обязателен'),
+  type: z.string().min(1, 'Тип магазина обязателен'),
+  managerId: z.number().optional(),
+  warehouseId: z.number().optional(),
+});
+
 type DeliveryFormData = z.infer<typeof deliverySchema>;
 type SaleFormData = z.infer<typeof saleSchema>;
+type StoreFormData = z.infer<typeof storeSchema>;
 
 type StoreWithStats = StoreType & {
   manager?: { name: string };
@@ -48,6 +58,7 @@ const Stores = () => {
   const [showDeliveryModal, setShowDeliveryModal] = useState(false);
   const [showSaleModal, setShowSaleModal] = useState(false);
   const [showSalesHistoryModal, setShowSalesHistoryModal] = useState(false);
+  const [isAddStoreModalOpen, setIsAddStoreModalOpen] = useState(false);
   const [selectedCity, setSelectedCity] = useState('');
   const { toast } = useToast();
 
@@ -235,6 +246,13 @@ const Stores = () => {
           <h1 className="text-2xl font-bold text-gray-900">Магазины</h1>
           <p className="text-gray-600">Управление розничными точками и продажами</p>
         </div>
+        <button
+          onClick={() => setIsAddStoreModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+        >
+          <Plus size={16} />
+          Добавить магазин
+        </button>
       </div>
 
       {/* Filters */}
@@ -276,23 +294,47 @@ const Stores = () => {
                 <div key={store.id} className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow">
                   {storeInTransit.length > 0 && (
                     <div className="bg-yellow-50 border-b border-yellow-200 p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Truck size={16} className="text-yellow-600" />
-                          <span className="text-sm font-medium text-yellow-800">
-                            Ожидает подтверждения поставок: {storeInTransit.length}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => {
-                            console.log('Confirming delivery for store:', store.name, 'Transaction ID:', storeInTransit[0].id);
-                            confirmDeliveryMutation.mutate(storeInTransit[0].id);
-                          }}
-                          disabled={confirmDeliveryMutation.isPending}
-                          className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 disabled:opacity-50"
-                        >
-                          {confirmDeliveryMutation.isPending ? 'Подтверждение...' : 'Подтвердить'}
-                        </button>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Truck size={16} className="text-yellow-600" />
+                        <span className="text-sm font-medium text-yellow-800">
+                          Ожидает подтверждения поставок: {storeInTransit.length}
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {storeInTransit.map((transaction: any) => (
+                          <div key={transaction.id} className="bg-white rounded p-3 border border-yellow-200">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="text-sm font-medium text-gray-900">
+                                  Поставка #{transaction.id}
+                                </div>
+                                <div className="text-xs text-gray-600 mt-1">
+                                  {transaction.type === 'delivery' ? 'От поставщика' : 
+                                   transaction.type === 'transfer' ? `Со склада ${transaction.fromLocationName || `#${transaction.fromLocationId}`}` :
+                                   'Перемещение товара'}
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {transaction.items?.length || 0} позиций • {new Date(transaction.createdAt).toLocaleDateString('ru-RU')}
+                                </div>
+                                {transaction.notes && (
+                                  <div className="text-xs text-gray-600 mt-1 italic">
+                                    {transaction.notes}
+                                  </div>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => {
+                                  console.log('Confirming delivery for store:', store.name, 'Transaction ID:', transaction.id);
+                                  confirmDeliveryMutation.mutate(transaction.id);
+                                }}
+                                disabled={confirmDeliveryMutation.isPending}
+                                className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 disabled:opacity-50 ml-3"
+                              >
+                                {confirmDeliveryMutation.isPending ? 'Подтверждение...' : 'Подтвердить'}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -462,6 +504,17 @@ const Stores = () => {
           onClose={() => setShowSalesHistoryModal(false)}
           store={selectedStore}
           products={products}
+        />
+      )}
+
+      {/* Add Store Modal */}
+      {isAddStoreModalOpen && (
+        <AddStoreModal
+          isOpen={isAddStoreModalOpen}
+          onClose={() => setIsAddStoreModalOpen(false)}
+          onSubmit={(data: StoreFormData) => createStoreMutation.mutate(data)}
+          warehouses={warehouses}
+          isLoading={createStoreMutation.isPending}
         />
       )}
     </div>
