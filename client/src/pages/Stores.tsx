@@ -106,10 +106,10 @@ const Stores = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions/detailed'] });
       queryClient.invalidateQueries({ queryKey: ['/api/analytics/dashboard'] });
       // Invalidate specific warehouse and store inventories
-      warehouses.forEach(warehouse => {
+      warehouses.forEach((warehouse: any) => {
         queryClient.invalidateQueries({ queryKey: ['/api/inventory', warehouse.id, 'warehouse'] });
       });
-      stores.forEach(store => {
+      stores.forEach((store: any) => {
         queryClient.invalidateQueries({ queryKey: ['/api/inventory', store.id, 'store'] });
       });
       toast({ title: 'Доставка выполнена успешно' });
@@ -141,7 +141,7 @@ const Stores = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions/detailed'] });
       queryClient.invalidateQueries({ queryKey: ['/api/analytics/dashboard'] });
       // Invalidate specific store inventory
-      stores.forEach(store => {
+      stores.forEach((store: any) => {
         queryClient.invalidateQueries({ queryKey: ['/api/inventory', store.id, 'store'] });
       });
       toast({ title: 'Поставка подтверждена' });
@@ -167,13 +167,15 @@ const Stores = () => {
           }))
         })
       }),
-    onSuccess: () => {
+    onSuccess: (result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions/detailed'] });
       queryClient.invalidateQueries({ queryKey: ['/api/analytics/dashboard'] });
       // Invalidate specific store inventory
-      queryClient.invalidateQueries({ queryKey: ['/api/inventory', data.storeId, 'store'] });
+      if (variables.storeId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/inventory', variables.storeId, 'store'] });
+      }
       toast({ title: 'Продажа зарегистрирована успешно' });
       setTimeout(() => {
         setShowSaleModal(false);

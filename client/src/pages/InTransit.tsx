@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 import './InTransit.css';
 
 type TransactionItem = {
@@ -25,6 +26,7 @@ type InTransitTransaction = {
 
 export default function InTransit() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: inTransitTransactions = [], isLoading } = useQuery({
     queryKey: ['/api/transactions/in-transit'],
@@ -103,7 +105,7 @@ export default function InTransit() {
         </div>
       ) : (
         <div className="transactions-grid">
-          {inTransitTransactions.map((transaction: InTransitTransaction) => (
+          {(inTransitTransactions as InTransitTransaction[]).map((transaction: InTransitTransaction) => (
             <div key={transaction.id} className="transaction-card">
               <div className="transaction-header">
                 <div className="transaction-type">
