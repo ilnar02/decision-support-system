@@ -40,7 +40,9 @@ const transferSchema = z.object({
 });
 
 type WarehouseFormData = z.infer<typeof warehouseSchema>;
-type TransferFormData = z.infer<typeof transferSchema>;
+type TransferFormData = z.infer<typeof transferSchema> & {
+  items: Array<{productId: number, quantity: number}>;
+};
 
 type WarehouseWithStats = WarehouseType & {
   inventory?: Inventory[];
