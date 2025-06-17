@@ -179,9 +179,15 @@ const Warehouses = () => {
     };
   });
 
+  // Get all inventory data for warehouse stats calculation
+  const { data: allInventory = [] } = useQuery<Inventory[]>({
+    queryKey: ['/api/inventory'],
+    queryFn: () => apiRequest('/api/inventory'),
+  });
+
   // Calculate warehouse stats with volume-based capacity
   const getWarehouseStats = (warehouse: WarehouseType) => {
-    const warehouseInventory = selectedWarehouseInventory.filter(
+    const warehouseInventory = allInventory.filter(
       (item: Inventory) => item.locationId === warehouse.id && item.locationType === 'warehouse'
     );
     
@@ -190,7 +196,7 @@ const Warehouses = () => {
     // Calculate used volume in m³
     const usedVolume = warehouseInventory.reduce((sum: number, item: Inventory) => {
       const product = products.find(p => p.id === item.productId);
-      const productVolume = product?.volume ? parseFloat(product.volume) : 0.010;
+      const productVolume = product?.volume ? parseFloat(product.volume.toString()) : 0.010;
       return sum + (item.quantity * productVolume);
     }, 0);
     
