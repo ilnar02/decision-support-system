@@ -671,21 +671,38 @@ export class DatabaseStorage implements IStorage {
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
+      // Get sales transactions with aggregated amounts
       const salesTransactions = await tx
         .select({
           id: transactions.id,
-          type: transactions.type,
           createdAt: transactions.createdAt,
-          totalAmount: sql<number>`COALESCE(SUM(ti.quantity * ti.price), 0)`,
-          totalQuantity: sql<number>`COALESCE(SUM(ti.quantity), 0)`,
         })
         .from(transactions)
-        .leftJoin(transactionItems, eq(transactions.id, transactionItems.transactionId))
-        .where(eq(transactions.type, 'sale'))
-        .groupBy(transactions.id, transactions.type, transactions.createdAt);
+        .where(eq(transactions.type, 'sale'));
+
+      // Calculate totals for each transaction
+      const salesWithTotals = [];
+      for (const transaction of salesTransactions) {
+        const items = await tx
+          .select({
+            quantity: transactionItems.quantity,
+            price: transactionItems.price,
+          })
+          .from(transactionItems)
+          .where(eq(transactionItems.transactionId, transaction.id));
+        
+        const totalAmount = items.reduce((sum, item) => sum + (item.quantity * (Number(item.price) || 0)), 0);
+        const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+        
+        salesWithTotals.push({
+          ...transaction,
+          totalAmount,
+          totalQuantity,
+        });
+      }
 
       // Group sales by month
-      const salesByMonth = salesTransactions.reduce((acc: any, sale: any) => {
+      const salesByMonth = salesWithTotals.reduce((acc: any, sale: any) => {
         const month = new Date(sale.createdAt || new Date()).toISOString().slice(0, 7); // YYYY-MM format
         if (!acc[month]) {
           acc[month] = { revenue: 0, quantity: 0 };
