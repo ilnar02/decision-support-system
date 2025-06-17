@@ -68,12 +68,7 @@ export const Layout = ({ children }: { children?: React.ReactNode }) => {
       icon: <ShoppingCart size={20} />,
       permission: 'read:transactions',
     },
-    {
-      title: 'Отчеты',
-      path: '/reports',
-      icon: <BarChart3 size={20} />,
-      permission: 'read:reports',
-    },
+
     {
       title: 'Сотрудники',
       path: '/employees',

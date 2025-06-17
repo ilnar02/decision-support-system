@@ -52,6 +52,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/users", async (req, res) => {
     try {
+      const validatedData = insertUserSchema.parse(req.body);
+      const user = await storage.createUser(validatedData);
+      res.status(201).json(user);
+    } catch (error) {
+      console.error("Create user error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.patch("/api/users/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      // Create partial schema for updates
+      const updateSchema = insertUserSchema.partial();
+      const validatedData = updateSchema.parse(req.body);
+      
+      const user = await storage.updateUser(id, validatedData);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      console.error("Update user error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/users/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      const success = await storage.deleteUser(id);
+      if (!success) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Delete user error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/users", async (req, res) => {
+    try {
       const userData = insertUserSchema.parse(req.body);
       const user = await storage.createUser(userData);
       res.status(201).json(user);

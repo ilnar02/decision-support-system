@@ -203,6 +203,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   role: true,
   locationId: true,
   locationType: true,
+}).extend({
+  password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({
