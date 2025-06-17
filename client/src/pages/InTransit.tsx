@@ -55,21 +55,31 @@ export default function InTransit() {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions/in-transit'] });
       queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions/detailed'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/dashboard'] });
+      // Invalidate all warehouse and store inventories since we don't know which ones were affected
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          Array.isArray(query.queryKey) && 
+          query.queryKey[0] === '/api/inventory' && 
+          query.queryKey.length === 3 
+      });
+      toast({ title: 'Поставка подтверждена' });
     },
   });
 
   const getLocationName = (locationId: number, locationType: string) => {
     if (locationType === 'warehouse') {
-      const warehouse = warehouses.find((w: any) => w.id === locationId);
+      const warehouse = (warehouses as any[]).find((w: any) => w.id === locationId);
       return warehouse?.name || `Склад #${locationId}`;
     } else {
-      const store = stores.find((s: any) => s.id === locationId);
+      const store = (stores as any[]).find((s: any) => s.id === locationId);
       return store?.name || `Магазин #${locationId}`;
     }
   };
 
   const getProductName = (productId: number) => {
-    const product = products.find((p: any) => p.id === productId);
+    const product = (products as any[]).find((p: any) => p.id === productId);
     return product?.name || `Товар #${productId}`;
   };
 
@@ -97,7 +107,7 @@ export default function InTransit() {
         </p>
       </div>
 
-      {inTransitTransactions.length === 0 ? (
+      {(inTransitTransactions as any[]).length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">📦</div>
           <h3>Нет товаров в пути</h3>
