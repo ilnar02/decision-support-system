@@ -557,6 +557,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
       ...data,
       categoryId: data.categoryId || null,
       price: data.price.toString(),
+      volume: data.volume.toString(),
     };
     onSubmit(submitData);
   };
