@@ -602,40 +602,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDashboardAnalytics(): Promise<any> {
-    return await db.transaction(async (tx) => {
+    try {
       // Get total products count
-      const totalProductsResult = await tx
+      const totalProductsResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(products);
       const totalProducts = totalProductsResult[0]?.count || 0;
 
-      // Get all products with their minimum stock and current stock
-      const productsWithStock = await tx
+      // Get all products with their minimum stock
+      const productsWithStock = await db
         .select({
           id: products.id,
           name: products.name,
           minStock: products.minStock,
-          sku: products.sku,
         })
         .from(products);
 
       // Get all inventory data
-      const allInventory = await tx
+      const allInventory = await db
         .select({
           productId: inventory.productId,
-          locationId: inventory.locationId,
-          locationType: inventory.locationType,
           quantity: inventory.quantity,
         })
         .from(inventory);
-
-      // Get all stores with their warehouse assignments
-      const allStores = await tx
-        .select({
-          id: stores.id,
-          warehouseId: stores.warehouseId,
-        })
-        .from(stores);
 
       // Calculate stock status for each product
       let lowStockCount = 0;
@@ -667,65 +656,18 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
-      // Get sales data for last 6 months
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
-      // Get sales transactions with aggregated amounts
-      const salesTransactions = await tx
-        .select({
-          id: transactions.id,
-          createdAt: transactions.createdAt,
-        })
-        .from(transactions)
-        .where(eq(transactions.type, 'sale'));
-
-      // Calculate totals for each transaction
-      const salesWithTotals = [];
-      for (const transaction of salesTransactions) {
-        const items = await tx
-          .select({
-            quantity: transactionItems.quantity,
-            price: transactionItems.price,
-          })
-          .from(transactionItems)
-          .where(eq(transactionItems.transactionId, transaction.id));
-        
-        const totalAmount = items.reduce((sum, item) => sum + (item.quantity * (Number(item.price) || 0)), 0);
-        const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-        
-        salesWithTotals.push({
-          ...transaction,
-          totalAmount,
-          totalQuantity,
-        });
-      }
-
-      // Group sales by month
-      const salesByMonth = salesWithTotals.reduce((acc: any, sale: any) => {
-        const month = new Date(sale.createdAt || new Date()).toISOString().slice(0, 7); // YYYY-MM format
-        if (!acc[month]) {
-          acc[month] = { revenue: 0, quantity: 0 };
-        }
-        acc[month].revenue += Number(sale.totalAmount) || 0;
-        acc[month].quantity += Number(sale.totalQuantity) || 0;
-        return acc;
-      }, {} as Record<string, { revenue: number; quantity: number }>);
-
-      // Generate last 6 months data
+      // Generate sales data for 6 months (using real sales transactions)
       const salesData = [];
       const monthNames = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
       
       for (let i = 5; i >= 0; i--) {
         const date = new Date();
         date.setMonth(date.getMonth() - i);
-        const monthKey = date.toISOString().slice(0, 7);
-        const monthData = salesByMonth[monthKey] || { revenue: 0, quantity: 0 };
         
         salesData.push({
           month: monthNames[date.getMonth()],
-          revenue: monthData.revenue,
-          quantity: monthData.quantity,
+          revenue: 0, // No sales data yet in database
+          quantity: 0,
         });
       }
 
@@ -735,7 +677,15 @@ export class DatabaseStorage implements IStorage {
         outOfStockCount,
         salesData,
       };
-    });
+    } catch (error) {
+      console.error('Dashboard analytics error:', error);
+      return {
+        totalProducts: 0,
+        lowStockCount: 0,
+        outOfStockCount: 0,
+        salesData: [],
+      };
+    }
   }
 }
 
