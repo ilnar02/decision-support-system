@@ -401,6 +401,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/transactions/in-transit", async (req, res) => {
+    try {
+      const transactions = await storage.getInTransitTransactions();
+      res.json(transactions);
+    } catch (error) {
+      console.error("Get in-transit transactions error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.patch("/api/transactions/:id/status", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status } = req.body;
+
+      if (!['in_transit', 'delivered'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+      }
+
+      const transaction = await storage.updateTransactionStatus(id, status);
+      if (!transaction) {
+        return res.status(404).json({ error: 'Transaction not found' });
+      }
+      
+      res.json(transaction);
+    } catch (error) {
+      console.error("Update transaction status error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.post("/api/transactions", async (req, res) => {
     try {
       console.log("Transaction request body:", JSON.stringify(req.body, null, 2));
