@@ -249,6 +249,124 @@
 }
 
 .alert-stock {
+  font-weight: 600;
+}
+
+/* Summary Stats */
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+  background: var(--background-subtle);
+  border-radius: var(--border-radius);
+}
+
+.summary-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--border-radius);
+  background: var(--primary-100);
+  color: var(--primary-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.summary-content h3 {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.summary-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+/* Stock Overview */
+.stock-overview {
+  padding: var(--spacing-4);
+}
+
+.stock-chart {
+  height: 40px;
+  background: var(--background-subtle);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  display: flex;
+  margin-bottom: var(--spacing-4);
+}
+
+.stock-segment {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: width 0.3s ease;
+}
+
+.stock-segment.good {
+  background: var(--success);
+}
+
+.stock-segment.warning {
+  background: var(--warning);
+}
+
+.stock-segment.danger {
+  background: var(--danger);
+}
+
+.stock-label {
+  opacity: 0.9;
+}
+
+.stock-legend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: 0.875rem;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+}
+
+.legend-color.good {
+  background: var(--success);
+}
+
+.legend-color.warning {
+  background: var(--warning);
+}
+
+.legend-color.danger {
+  background: var(--danger);
+}
+
+.alert-stock {
   font-weight: 500;
 }
 
