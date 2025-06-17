@@ -603,6 +603,109 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  async updateTransactionStatus(id: number, status: 'in_transit' | 'delivered'): Promise<Transaction | undefined> {
+    return await db.transaction(async (tx) => {
+      const [transaction] = await tx
+        .select()
+        .from(transactions)
+        .where(eq(transactions.id, id));
+
+      if (!transaction) return undefined;
+
+      const [updatedTransaction] = await tx
+        .update(transactions)
+        .set({
+          status,
+          deliveredAt: status === 'delivered' ? new Date() : null,
+        })
+        .where(eq(transactions.id, id))
+        .returning();
+
+      // If marking as delivered, update inventory
+      if (status === 'delivered') {
+        const items = await tx
+          .select()
+          .from(transactionItems)
+          .where(eq(transactionItems.transactionId, id));
+
+        for (const item of items) {
+          if (transaction.type === 'transfer' || transaction.type === 'delivery') {
+            if (transaction.toLocationId && transaction.toLocationType) {
+              const [toInventory] = await tx
+                .select()
+                .from(inventory)
+                .where(
+                  and(
+                    eq(inventory.productId, item.productId),
+                    eq(inventory.locationId, transaction.toLocationId),
+                    eq(inventory.locationType, transaction.toLocationType)
+                  )
+                );
+
+              if (toInventory) {
+                await tx
+                  .update(inventory)
+                  .set({ 
+                    quantity: toInventory.quantity + item.quantity,
+                    lastUpdated: new Date()
+                  })
+                  .where(eq(inventory.id, toInventory.id));
+              } else {
+                await tx.insert(inventory).values({
+                  productId: item.productId,
+                  locationId: transaction.toLocationId,
+                  locationType: transaction.toLocationType,
+                  quantity: item.quantity,
+                });
+              }
+            }
+          }
+        }
+      }
+
+      return updatedTransaction;
+    });
+  }
+
+  async getInTransitTransactions(): Promise<any[]> {
+    const result = await db
+      .select({
+        id: transactions.id,
+        type: transactions.type,
+        status: transactions.status,
+        fromLocationId: transactions.fromLocationId,
+        fromLocationType: transactions.fromLocationType,
+        toLocationId: transactions.toLocationId,
+        toLocationType: transactions.toLocationType,
+        notes: transactions.notes,
+        createdAt: transactions.createdAt,
+      })
+      .from(transactions)
+      .where(eq(transactions.status, 'in_transit'))
+      .orderBy(desc(transactions.createdAt));
+
+    const transactionsWithItems = await Promise.all(
+      result.map(async (transaction) => {
+        const items = await db
+          .select({
+            id: transactionItems.id,
+            productId: transactionItems.productId,
+            quantity: transactionItems.quantity,
+            price: transactionItems.price,
+          })
+          .from(transactionItems)
+          .where(eq(transactionItems.transactionId, transaction.id));
+
+        return {
+          ...transaction,
+          items,
+        };
+      })
+    );
+
+    return transactionsWithItems;
+  }
+
   async getDashboardAnalytics(): Promise<any> {
     try {
       // Get total products count
