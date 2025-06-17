@@ -296,7 +296,7 @@ const Employees = () => {
             setIsEditModalOpen(false);
             setEditingUser(null);
           }}
-          onSubmit={(data) => updateUserMutation.mutate({ id: editingUser.id, data })}
+          onSubmit={(data) => updateUserMutation.mutate({ id: editingUser.id, data: data as UpdateUserFormData })}
           title="Редактировать сотрудника"
           initialData={editingUser}
           stores={stores}
@@ -333,22 +333,22 @@ const UserModal: React.FC<UserModalProps> = ({
   const isEditing = !!initialData;
   const schema = isEditing ? updateUserSchema : createUserSchema;
   
-  const form = useForm<UserFormData | UpdateUserFormData>({
+  const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
       username: initialData?.username || '',
       password: '',
       name: initialData?.name || '',
       email: initialData?.email || '',
-      role: (initialData?.role as 'admin' | 'manager' | 'storekeeper' | 'cashier') || 'cashier',
+      role: initialData?.role || 'cashier',
       locationId: initialData?.locationId || undefined,
-      locationType: (initialData?.locationType as 'warehouse' | 'store' | undefined) || undefined,
+      locationType: initialData?.locationType || undefined,
     },
   });
 
   const watchedLocationType = form.watch('locationType');
 
-  const handleSubmit = (data: UserFormData | UpdateUserFormData) => {
+  const handleSubmit = (data: any) => {
     if (!data.locationType) {
       data.locationId = undefined;
     }
