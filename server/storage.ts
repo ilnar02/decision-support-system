@@ -470,9 +470,21 @@ export class DatabaseStorage implements IStorage {
 
   async createTransaction(insertTransaction: InsertTransaction, items: InsertTransactionItem[]): Promise<Transaction> {
     return await db.transaction(async (tx) => {
+      // Determine status based on transaction type
+      let status = 'delivered';
+      if (insertTransaction.type === 'transfer') {
+        status = 'in_transit';
+      }
+      // Deliveries from suppliers (no fromLocationId) are immediate
+      // Deliveries between locations should be in_transit
+
       const [transaction] = await tx
         .insert(transactions)
-        .values(insertTransaction)
+        .values({
+          ...insertTransaction,
+          status,
+          deliveredAt: status === 'delivered' ? new Date() : null,
+        })
         .returning();
 
       const transactionItemsWithId = items.map(item => ({
