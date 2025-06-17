@@ -263,11 +263,14 @@ const Stores = () => {
                           </span>
                         </div>
                         <button
-                          onClick={() => confirmDeliveryMutation.mutate(storeInTransit[0].id)}
+                          onClick={() => {
+                            console.log('Confirming delivery for store:', store.name, 'Transaction ID:', storeInTransit[0].id);
+                            confirmDeliveryMutation.mutate(storeInTransit[0].id);
+                          }}
                           disabled={confirmDeliveryMutation.isPending}
-                          className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
+                          className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 disabled:opacity-50"
                         >
-                          Подтвердить
+                          {confirmDeliveryMutation.isPending ? 'Подтверждение...' : 'Подтвердить'}
                         </button>
                       </div>
                     </div>
