@@ -122,6 +122,12 @@ const Warehouses = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions/in-transit'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions/detailed'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/dashboard'] });
+      // Invalidate specific warehouse inventories
+      warehouses.forEach(warehouse => {
+        queryClient.invalidateQueries({ queryKey: ['/api/inventory', warehouse.id, 'warehouse'] });
+      });
       setIsTransferModalOpen(false);
       toast({ title: 'Перемещение выполнено успешно' });
     },
@@ -141,6 +147,12 @@ const Warehouses = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions/in-transit'] });
       queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions/detailed'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/dashboard'] });
+      // Invalidate specific warehouse inventories
+      warehouses.forEach(warehouse => {
+        queryClient.invalidateQueries({ queryKey: ['/api/inventory', warehouse.id, 'warehouse'] });
+      });
       toast({ title: 'Поставка подтверждена' });
     },
   });

@@ -103,6 +103,15 @@ const Stores = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions/in-transit'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions/detailed'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/dashboard'] });
+      // Invalidate specific warehouse and store inventories
+      warehouses.forEach(warehouse => {
+        queryClient.invalidateQueries({ queryKey: ['/api/inventory', warehouse.id, 'warehouse'] });
+      });
+      stores.forEach(store => {
+        queryClient.invalidateQueries({ queryKey: ['/api/inventory', store.id, 'store'] });
+      });
       toast({ title: 'Доставка выполнена успешно' });
       setTimeout(() => {
         setShowDeliveryModal(false);
@@ -129,6 +138,12 @@ const Stores = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/transactions/in-transit'] });
       queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions/detailed'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/dashboard'] });
+      // Invalidate specific store inventory
+      stores.forEach(store => {
+        queryClient.invalidateQueries({ queryKey: ['/api/inventory', store.id, 'store'] });
+      });
       toast({ title: 'Поставка подтверждена' });
     },
   });
@@ -155,6 +170,10 @@ const Stores = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions/detailed'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/dashboard'] });
+      // Invalidate specific store inventory
+      queryClient.invalidateQueries({ queryKey: ['/api/inventory', data.storeId, 'store'] });
       toast({ title: 'Продажа зарегистрирована успешно' });
       setTimeout(() => {
         setShowSaleModal(false);
