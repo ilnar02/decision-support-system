@@ -102,6 +102,7 @@ const Stores = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions/in-transit'] });
       toast({ title: 'Доставка выполнена успешно' });
       setTimeout(() => {
         setShowDeliveryModal(false);
