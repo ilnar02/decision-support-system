@@ -115,6 +115,7 @@ Changelog:
 - June 16, 2025. Implemented product modifications: removed supplier assignment, added volume field, disabled deletion, enhanced warehouse distribution display with filtering and total stock calculation
 - June 17, 2025. Created comprehensive Home dashboard with real-time analytics: inventory status tracking (total products, low stock alerts, out-of-stock items), dynamic sales charts with 6-month revenue and quantity data, interactive stock status visualization with color-coded segments
 - June 17, 2025. Implemented realistic transaction status system: transfers and deliveries now start as "in_transit" status, sales remain "delivered" immediately, added confirmation system for goods arrival, created dedicated "In Transit" page for tracking pending deliveries
+- June 17, 2025. Enhanced transaction confirmation system: all incoming goods movements (supplier deliveries, warehouse transfers, store deliveries) now require manual confirmation, added confirmation UI to warehouse and store detail pages, only sales remain instant
 ```
 
 ## User Preferences
