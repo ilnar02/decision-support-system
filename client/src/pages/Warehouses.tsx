@@ -339,6 +339,65 @@ const Warehouses = () => {
                 </div>
               </div>
 
+              {/* Incoming Deliveries */}
+              {inTransitTransactions.length > 0 && (
+                <div className="bg-yellow-50 rounded-lg shadow-sm border border-yellow-200">
+                  <div className="p-4 border-b border-yellow-200 bg-yellow-100">
+                    <h3 className="font-medium text-yellow-800 flex items-center gap-2">
+                      <Truck size={20} className="text-yellow-600" />
+                      Ожидающие подтверждения поставки ({inTransitTransactions.length})
+                    </h3>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    {inTransitTransactions.map((transaction: any) => (
+                      <div key={transaction.id} className="bg-white rounded-lg border p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {transaction.type === 'delivery' ? 'Поставка от поставщика' : 'Перемещение'}
+                              <span className="ml-2 text-sm text-gray-500">#{transaction.id}</span>
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {new Date(transaction.createdAt).toLocaleDateString('ru-RU', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => onConfirmDelivery(transaction.id)}
+                            disabled={isConfirming}
+                            className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50"
+                          >
+                            {isConfirming ? 'Подтверждение...' : 'Подтвердить'}
+                          </button>
+                        </div>
+                        <div className="border-t pt-3">
+                          <div className="text-sm font-medium text-gray-700 mb-2">Товары:</div>
+                          {transaction.items.map((item: any) => {
+                            const product = products.find((p: any) => p.id === item.productId);
+                            return (
+                              <div key={item.id} className="flex justify-between text-sm">
+                                <span>{product?.name || `Товар #${item.productId}`}</span>
+                                <span className="font-medium">{item.quantity} {product?.unit || 'шт'}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {transaction.notes && (
+                          <div className="mt-3 pt-3 border-t text-sm text-gray-600">
+                            <strong>Примечания:</strong> {transaction.notes}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Inventory */}
               <div className="bg-white rounded-lg shadow-sm border">
                 <div className="p-4 border-b">

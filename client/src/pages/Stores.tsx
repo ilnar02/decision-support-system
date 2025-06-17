@@ -225,9 +225,33 @@ const Stores = () => {
         <>
           {/* Stores Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {filteredStores.map((store: StoreWithStats) => (
-              <div key={store.id} className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow">
-                <div className="p-6">
+            {filteredStores.map((store: StoreWithStats) => {
+              const storeInTransit = inTransitTransactions.filter((t: any) => 
+                t.toLocationId === store.id && t.toLocationType === 'store'
+              );
+              
+              return (
+                <div key={store.id} className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow">
+                  {storeInTransit.length > 0 && (
+                    <div className="bg-yellow-50 border-b border-yellow-200 p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Truck size={16} className="text-yellow-600" />
+                          <span className="text-sm font-medium text-yellow-800">
+                            Ожидает подтверждения поставок: {storeInTransit.length}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => confirmDeliveryMutation.mutate(storeInTransit[0].id)}
+                          disabled={confirmDeliveryMutation.isPending}
+                          className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
+                        >
+                          Подтвердить
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">{store.name}</h3>
@@ -293,9 +317,10 @@ const Stores = () => {
                       История
                     </button>
                   </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Selected Store Details */}
