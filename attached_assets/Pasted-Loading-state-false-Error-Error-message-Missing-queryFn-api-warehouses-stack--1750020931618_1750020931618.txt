@@ -1,0 +1,25 @@
+Loading state: false
+Error: 
+Error {}
+message: "Missing queryFn: '["/api/warehouses"]'"
+stack: "Error: Missing queryFn: '["/api/warehouses"]'↵ at https://0dec0afd-e965-4dc5-9fea-4fa8d6055af3-00-22uoh3evxxjv7.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=1a2b6b54:255:33↵ at Object.fetchFn [as fn] (https://0dec0afd-e965-4dc5-9fea-4fa8d6055af3-00-22uoh3evxxjv7.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=1a2b6b54:840:14)↵ at run (https://0dec0afd-e965-4dc5-9fea-4fa8d6055af3-00-22uoh3evxxjv7.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=1a2b6b54:494:49)↵ at https://0dec0afd-e965-4dc5-9fea-4fa8d6055af3-00-22uoh3evxxjv7.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=1a2b6b54:519:11"
+get stack: ƒ ()
+set stack: ƒ ()
+[[Prototype]]: Object
+Warehouses data: 
+Array []
+length: 0
+[[Prototype]]: Array(0)
+Loading state: false
+Error: 
+Error {}
+message: "Missing queryFn: '["/api/warehouses"]'"
+stack: "Error: Missing queryFn: '["/api/warehouses"]'↵ at https://0dec0afd-e965-4dc5-9fea-4fa8d6055af3-00-22uoh3evxxjv7.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=1a2b6b54:255:33↵ at Object.fetchFn [as fn] (https://0dec0afd-e965-4dc5-9fea-4fa8d6055af3-00-22uoh3evxxjv7.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=1a2b6b54:840:14)↵ at run (https://0dec0afd-e965-4dc5-9fea-4fa8d6055af3-00-22uoh3evxxjv7.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=1a2b6b54:494:49)↵ at https://0dec0afd-e965-4dc5-9fea-4fa8d6055af3-00-22uoh3evxxjv7.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=1a2b6b54:519:11"
+get stack: ƒ ()
+set stack: ƒ ()
+[[Prototype]]: Object
+constructor: ƒ Error()
+message: "Missing queryFn: '["/api/warehouses"]'"
+name: "Error"
+toString: ƒ toString()
+[[Prototype]]: Object
